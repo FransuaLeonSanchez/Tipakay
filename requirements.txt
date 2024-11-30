@@ -1,0 +1,6 @@
+twilio
+fastapi
+python-dotenv
+llm
+psycopg2
+openai
