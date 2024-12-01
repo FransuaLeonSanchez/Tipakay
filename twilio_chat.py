@@ -27,6 +27,9 @@ async def process_incoming_message(form_data):
 
 def send_message(to_number: str, message: str) -> None:
     try:
+        # Desactivar los logs de HTTP de Twilio
+        client.http_client.logger.setLevel(logging.WARNING)
+
         client.messages.create(
             from_=TWILIO_WHATSAPP_NUMBER,
             body=message,

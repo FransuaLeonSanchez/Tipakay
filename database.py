@@ -3,6 +3,7 @@ from psycopg2.extras import RealDictCursor
 import json
 from dotenv import load_dotenv
 import os
+from config import SYSTEM_CONTEXT  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
 from datetime import datetime
 
 load_dotenv()
@@ -44,14 +45,20 @@ def get_chat_history(phone_number: str) -> list:
         if result and result['chat_history']:
             return json.loads(result['chat_history'])
 
-        # Si no existe, crear un registro vacío
+        # Si no existe, crear un registro con el mensaje inicial del sistema
+        initial_message = {
+            "role": "system",
+            "content": SYSTEM_CONTEXT,
+            "timestamp": datetime.now().isoformat()
+        }
+
         cursor.execute("""
             INSERT INTO conversations (phone_number, chat_history) 
             VALUES (%s, %s)
-        """, (phone_number, json.dumps([])))
+        """, (phone_number, json.dumps([initial_message])))
 
         conn.commit()
-        return []
+        return [initial_message]
 
     except Exception as e:
         print(f"Error getting chat history: {str(e)}")

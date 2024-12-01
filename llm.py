@@ -1,3 +1,4 @@
+import logging
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -27,6 +28,7 @@ def get_completion(prompt: str, phone_number: str) -> str:
                     for msg in history[-10:]]
 
         # Obtener respuesta de OpenAI
+        logging.info(f"Consultando a OpenAI para el número: {phone_number}")
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         completion = client.chat.completions.create(
             model=os.getenv("OPENAI_MODEL"),
@@ -35,16 +37,20 @@ def get_completion(prompt: str, phone_number: str) -> str:
 
         response_content = completion.choices[0].message.content
 
-        # Crear mensaje del asistente
+        # Limpiar la respuesta
+        cleaned_response = response_content.replace('<', '').replace('>', '')
+        cleaned_response = cleaned_response.replace('**', '*')
+
+        # Crear mensaje del asistente con la respuesta limpia
         assistant_message = {
             "role": "assistant",
-            "content": response_content,
+            "content": cleaned_response,
             "timestamp": datetime.now().isoformat()
         }
 
         # Actualizar historial con respuesta del asistente
         update_chat_history(phone_number, assistant_message)
 
-        return response_content
+        return cleaned_response
     except Exception as e:
         return f"Error al procesar la solicitud: {str(e)}"
