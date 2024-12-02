@@ -10,6 +10,9 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Actualizar pip
+RUN pip install --upgrade pip
+
 # Copiar requirements.txt
 COPY requirements.txt .
 
