@@ -39,7 +39,8 @@ def get_chat_history(phone_number: str) -> list:
         # Verificar si existe el registro
         cursor.execute(
             """
-            SELECT chat_history->-50: FROM conversations 
+            SELECT chat_history 
+            FROM conversations 
             WHERE phone_number = %s
         """,
             (phone_number,),
