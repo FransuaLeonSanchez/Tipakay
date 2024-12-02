@@ -1,26 +1,29 @@
-import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
-from dotenv import load_dotenv
+from psycopg2.pool import SimpleConnectionPool
 import os
-from config import SYSTEM_CONTEXT  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
+from config import (
+    SYSTEM_CONTEXT,
+)  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
 from datetime import datetime
 
-load_dotenv()
+# Crear el pool de conexiones
+pool = SimpleConnectionPool(
+    minconn=1,  # Mínimo número de conexiones en el pool
+    maxconn=20,  # Máximo número de conexiones en el pool
+    host=os.getenv("DB_HOST"),
+    database=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    cursor_factory=RealDictCursor,
+)
 
 
 def get_db_connection():
     try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            database=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            cursor_factory=RealDictCursor
-        )
-        return conn
+        return pool.getconn()
     except Exception as e:
-        print(f"Error al conectar a la base de datos: {e}")
+        print(f"Error al obtener conexión del pool: {e}")
         return None
 
 
@@ -34,28 +37,33 @@ def get_chat_history(phone_number: str) -> list:
         cursor = conn.cursor()
 
         # Verificar si existe el registro
-        cursor.execute("""
-            SELECT chat_history 
-            FROM conversations 
+        cursor.execute(
+            """
+            SELECT chat_history->-50: FROM conversations 
             WHERE phone_number = %s
-        """, (phone_number,))
+        """,
+            (phone_number,),
+        )
 
         result = cursor.fetchone()
 
-        if result and result['chat_history']:
-            return json.loads(result['chat_history'])
+        if result and result["chat_history"]:
+            return json.loads(result["chat_history"])
 
         # Si no existe, crear un registro con el mensaje inicial del sistema
         initial_message = {
             "role": "system",
             "content": SYSTEM_CONTEXT,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO conversations (phone_number, chat_history) 
             VALUES (%s, %s)
-        """, (phone_number, json.dumps([initial_message])))
+        """,
+            (phone_number, json.dumps([initial_message])),
+        )
 
         conn.commit()
         return [initial_message]
@@ -78,17 +86,20 @@ def update_chat_history(phone_number: str, new_message: dict):
         cursor = conn.cursor()
 
         # Obtener el historial actual
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT chat_history 
             FROM conversations 
             WHERE phone_number = %s
             FOR UPDATE
-        """, (phone_number,))
+        """,
+            (phone_number,),
+        )
 
         result = cursor.fetchone()
 
-        if result and result['chat_history']:
-            history = json.loads(result['chat_history'])
+        if result and result["chat_history"]:
+            history = json.loads(result["chat_history"])
         else:
             history = []
 
@@ -99,18 +110,24 @@ def update_chat_history(phone_number: str, new_message: dict):
         history = history[-50:]
 
         # Actualizar el registro
-        cursor.execute("""
+        cursor.execute(
+            """
             UPDATE conversations 
             SET chat_history = %s
             WHERE phone_number = %s
-        """, (json.dumps(history), phone_number))
+        """,
+            (json.dumps(history), phone_number),
+        )
 
         if cursor.rowcount == 0:
             # Si no existe el registro, crearlo
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO conversations (phone_number, chat_history) 
                 VALUES (%s, %s)
-            """, (phone_number, json.dumps([new_message])))
+            """,
+                (phone_number, json.dumps([new_message])),
+            )
 
         conn.commit()
         return history
@@ -123,6 +140,7 @@ def update_chat_history(phone_number: str, new_message: dict):
         if conn:
             conn.close()
 
+
 def delete_chat_history(phone_number: str) -> bool:
     """Elimina el historial de chat de un número específico"""
     conn = get_db_connection()
@@ -131,10 +149,13 @@ def delete_chat_history(phone_number: str) -> bool:
 
     try:
         cursor = conn.cursor()
-        cursor.execute("""
+        cursor.execute(
+            """
             DELETE FROM conversations 
             WHERE phone_number = %s
-        """, (phone_number,))
+        """,
+            (phone_number,),
+        )
 
         conn.commit()
         # Retorna True si se eliminó algún registro

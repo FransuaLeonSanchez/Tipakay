@@ -1,11 +1,8 @@
 import logging
 from openai import OpenAI
-from dotenv import load_dotenv
 import os
 from datetime import datetime
 from database import get_chat_history, update_chat_history
-
-load_dotenv()
 
 
 def get_completion(prompt: str, phone_number: str) -> str:
@@ -17,15 +14,16 @@ def get_completion(prompt: str, phone_number: str) -> str:
         user_message = {
             "role": "user",
             "content": prompt,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Actualizar historial con mensaje del usuario
         history = update_chat_history(phone_number, user_message)
 
         # Preparar mensajes para OpenAI
-        messages = [{"role": msg["role"], "content": msg["content"]}
-                    for msg in history[-10:]]
+        messages = [
+            {"role": msg["role"], "content": msg["content"]} for msg in history[-10:]
+        ]
 
         # Obtener respuesta de OpenAI
         logging.info(f"Consultando a OpenAI para el número: {phone_number}")
@@ -34,18 +32,20 @@ def get_completion(prompt: str, phone_number: str) -> str:
             completion = client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL"),
                 messages=messages,
-                timeout=30  # Añadir timeout
+                timeout=30,  # Añadir timeout
             )
 
             # Obtener y limpiar la respuesta inmediatamente
             response_content = completion.choices[0].message.content
-            response_content = response_content.replace('<', '').replace('>', '')
-            response_content = response_content.replace('**', '*')
+            response_content = response_content.replace("<", "").replace(">", "")
+            response_content = response_content.replace("**", "*")
 
             # Limitar la respuesta a 1600 caracteres si es más larga
             if len(response_content) > 1590:
                 response_content = response_content[:1587] + "..."
-                logging.info(f"Respuesta truncada a 1600 caracteres para el número: {phone_number}")
+                logging.info(
+                    f"Respuesta truncada a 1600 caracteres para el número: {phone_number}"
+                )
 
         except Exception as openai_error:
             error_detail = str(openai_error)
@@ -64,7 +64,7 @@ def get_completion(prompt: str, phone_number: str) -> str:
         assistant_message = {
             "role": "assistant",
             "content": response_content,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Actualizar historial con respuesta del asistente
