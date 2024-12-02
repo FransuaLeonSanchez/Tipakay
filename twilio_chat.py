@@ -1,9 +1,7 @@
 from twilio.rest import Client
-from dotenv import load_dotenv
 import os
 import logging
 
-load_dotenv()
 
 ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
