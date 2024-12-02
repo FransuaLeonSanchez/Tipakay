@@ -7,11 +7,6 @@ from config import (
 )  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
 from datetime import datetime
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
 def get_db_connection():
     try:
         conn = psycopg2.connect(

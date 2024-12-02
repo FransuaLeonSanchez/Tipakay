@@ -3,10 +3,6 @@ from openai import OpenAI
 import os
 from datetime import datetime
 from database import get_chat_history, update_chat_history
-from dotenv import load_dotenv
-
-load_dotenv()
-
 
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
