@@ -7,6 +7,11 @@ from config import (
 )  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
 from datetime import datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 def get_db_connection():
     try:
         conn = psycopg2.connect(
@@ -14,12 +19,13 @@ def get_db_connection():
             database=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            cursor_factory=RealDictCursor
+            cursor_factory=RealDictCursor,
         )
         return conn
     except Exception as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
+
 
 def get_chat_history(phone_number: str) -> list:
     """Obtiene el historial del chat desde la base de datos"""
