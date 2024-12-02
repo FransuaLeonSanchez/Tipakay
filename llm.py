@@ -43,8 +43,8 @@ def get_completion(prompt: str, phone_number: str) -> str:
             response_content = response_content.replace('**', '*')
 
             # Limitar la respuesta a 1600 caracteres si es más larga
-            if len(response_content) > 1600:
-                response_content = response_content[:1597] + "..."
+            if len(response_content) > 1590:
+                response_content = response_content[:1587] + "..."
                 logging.info(f"Respuesta truncada a 1600 caracteres para el número: {phone_number}")
 
         except Exception as openai_error:
