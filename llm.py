@@ -4,6 +4,14 @@ import os
 from datetime import datetime
 from database import get_chat_history, update_chat_history
 
+class OpenAIClient:
+    _instance = None  # Variable privada para almacenar la única instancia
+
+    @classmethod
+    def get_client(cls):
+        if not cls._instance:
+            cls._instance = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        return cls._instance
 
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
@@ -28,11 +36,11 @@ def get_completion(prompt: str, phone_number: str) -> str:
         # Obtener respuesta de OpenAI
         logging.info(f"Consultando a OpenAI para el número: {phone_number}")
         try:
-            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            client = OpenAIClient.get_client()
             completion = client.chat.completions.create(
                 model=os.getenv("OPENAI_MODEL"),
                 messages=messages,
-                timeout=30,  # Añadir timeout
+                timeout=30,
             )
 
             # Obtener y limpiar la respuesta inmediatamente
