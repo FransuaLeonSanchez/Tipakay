@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 import logging
 
-from database import delete_chat_history
+from database import delete_chat_history, get_db_connection
 from llm import get_completion
 import twilio_chat
 
@@ -89,6 +89,16 @@ async def delete_conversation(phone_number: str):
     except Exception as e:
         logging.error(f"Error al eliminar conversación: {str(e)}")
         return {"status": "error", "message": str(e)}
+
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "database": "up" if get_db_connection() else "down",
+        "openai": bool(os.getenv("OPENAI_API_KEY")),
+        "twilio": bool(os.getenv("TWILIO_ACCOUNT_SID")),
+    }
 
 
 if __name__ == "__main__":
