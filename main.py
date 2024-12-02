@@ -3,6 +3,8 @@ import uvicorn
 from dotenv import load_dotenv
 import os
 import logging
+
+from database import delete_chat_history
 from llm import get_completion
 import twilio_chat
 
@@ -59,6 +61,25 @@ async def receive_message(request: Request):
             media_type="application/xml"
         )
 
+
+@app.delete("/conversation/{phone_number}")
+async def delete_conversation(phone_number: str):
+    try:
+        # Limpiar el número de teléfono
+        clean_number = phone_number.replace('whatsapp:', '').replace('+', '')
+
+        # Intentar eliminar el registro
+        success = delete_chat_history(clean_number)
+
+        if success:
+            logging.info(f"Conversación eliminada - Número: {clean_number}")
+            return {"status": "success", "message": f"Conversación eliminada para el número {phone_number}"}
+        else:
+            return {"status": "not_found", "message": f"No se encontró conversación para el número {phone_number}"}
+
+    except Exception as e:
+        logging.error(f"Error al eliminar conversación: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(

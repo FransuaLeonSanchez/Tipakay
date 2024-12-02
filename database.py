@@ -122,3 +122,26 @@ def update_chat_history(phone_number: str, new_message: dict):
     finally:
         if conn:
             conn.close()
+
+def delete_chat_history(phone_number: str) -> bool:
+    """Elimina el historial de chat de un número específico"""
+    conn = get_db_connection()
+    if not conn:
+        return False
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            DELETE FROM conversations 
+            WHERE phone_number = %s
+        """, (phone_number,))
+
+        conn.commit()
+        # Retorna True si se eliminó algún registro
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error deleting chat history: {str(e)}")
+        return False
+    finally:
+        if conn:
+            conn.close()

@@ -12,7 +12,7 @@ Bot de WhatsApp integrado con OpenAI y Twilio diseñado para TechPro Store. Gest
 - Dockerfile: Configuración para Docker
 - .env.example: Ejemplo de variables de entorno necesarias
 
-## Ejecución
+## Ejecución Local
 
 1. Instalar dependencias:
 pip install -r requirements.txt
@@ -22,9 +22,32 @@ pip install -r requirements.txt
 3. Ejecutar el servidor:
 python main.py
 
-4. Con Docker:
-docker build -t techpro-bot .
-docker run -p 5000:5000 techpro-bot
+## Ejecución con Docker
+
+1. Construir la imagen de Docker:
+```bash
+docker build -t tipakay .
+```
+
+2. Ejecutar el contenedor en segundo plano:
+```bash
+docker run -d --name docker_tipakay -p 5000:5000 tipakay
+```
+
+Comandos útiles de Docker:
+```bash
+# Ver logs del contenedor
+docker logs docker_tipakay
+
+# Detener el contenedor
+docker stop docker_tipakay
+
+# Reiniciar el contenedor
+docker restart docker_tipakay
+
+# Eliminar el contenedor
+docker rm docker_tipakay
+```
 
 ## Funcionalidades del Bot
 
