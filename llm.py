@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from database import get_chat_history, update_chat_history
 
+
 class OpenAIClient:
     _instance = None  # Variable privada para almacenar la única instancia
 
@@ -12,6 +13,7 @@ class OpenAIClient:
         if not cls._instance:
             cls._instance = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         return cls._instance
+
 
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
