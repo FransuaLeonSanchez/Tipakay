@@ -1,31 +1,25 @@
 from psycopg2.extras import RealDictCursor
 import json
-from psycopg2.pool import SimpleConnectionPool
+import psycopg2
 import os
 from config import (
     SYSTEM_CONTEXT,
 )  # Importar la variable SYSTEM_CONTEXT del archivo llm.py
 from datetime import datetime
 
-# Crear el pool de conexiones
-pool = SimpleConnectionPool(
-    minconn=1,  # Mínimo número de conexiones en el pool
-    maxconn=20,  # Máximo número de conexiones en el pool
-    host=os.getenv("DB_HOST"),
-    database=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USER"),
-    password=os.getenv("DB_PASSWORD"),
-    cursor_factory=RealDictCursor,
-)
-
-
 def get_db_connection():
     try:
-        return pool.getconn()
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            database=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            cursor_factory=RealDictCursor
+        )
+        return conn
     except Exception as e:
-        print(f"Error al obtener conexión del pool: {e}")
+        print(f"Error al conectar a la base de datos: {e}")
         return None
-
 
 def get_chat_history(phone_number: str) -> list:
     """Obtiene el historial del chat desde la base de datos"""
