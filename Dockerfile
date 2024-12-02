@@ -14,7 +14,9 @@ RUN apt-get update \
         gcc \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --upgrade pip
+    && pip install --no-cache-dir --upgrade pip \
+    && apt-get install -y libpq-dev gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar e instalar requirements primero para aprovechar la caché de Docker
 COPY requirements.txt .
