@@ -7,6 +7,7 @@ TWILIO_WHATSAPP_NUMBER = "whatsapp:+14155238886"
 # Remover inicialización global del cliente
 client = None
 
+
 def get_twilio_client():
     global client
     if client is None:
@@ -17,6 +18,7 @@ def get_twilio_client():
             raise ValueError("Twilio credentials not found in environment variables")
         client = Client(ACCOUNT_SID, AUTH_TOKEN)
     return client
+
 
 async def process_incoming_message(form_data):
     try:
@@ -30,6 +32,7 @@ async def process_incoming_message(form_data):
         logging.error(f"Error procesando mensaje: {str(e)}")
         return None, None
 
+
 def send_message(to_number: str, message: str) -> None:
     try:
         # Obtener cliente cuando sea necesario
@@ -38,9 +41,7 @@ def send_message(to_number: str, message: str) -> None:
         twilio_client.http_client.logger.setLevel(logging.WARNING)
 
         twilio_client.messages.create(
-            from_=TWILIO_WHATSAPP_NUMBER,
-            body=message,
-            to=to_number
+            from_=TWILIO_WHATSAPP_NUMBER, body=message, to=to_number
         )
     except Exception as e:
         logging.error(f"Error enviando mensaje: {str(e)}")
