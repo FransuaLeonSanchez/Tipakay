@@ -2,12 +2,21 @@ from twilio.rest import Client
 import os
 import logging
 
-ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = "whatsapp:+14155238886"
 
-client = Client(ACCOUNT_SID, AUTH_TOKEN)
+# Remover inicialización global del cliente
+client = None
 
+def get_twilio_client():
+    global client
+    if client is None:
+        # Inicializar cliente solo cuando se necesite
+        ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+        AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+        if not ACCOUNT_SID or not AUTH_TOKEN:
+            raise ValueError("Twilio credentials not found in environment variables")
+        client = Client(ACCOUNT_SID, AUTH_TOKEN)
+    return client
 
 async def process_incoming_message(form_data):
     try:
@@ -21,13 +30,18 @@ async def process_incoming_message(form_data):
         logging.error(f"Error procesando mensaje: {str(e)}")
         return None, None
 
-
 def send_message(to_number: str, message: str) -> None:
     try:
+        # Obtener cliente cuando sea necesario
+        twilio_client = get_twilio_client()
         # Desactivar los logs de HTTP de Twilio
-        client.http_client.logger.setLevel(logging.WARNING)
+        twilio_client.http_client.logger.setLevel(logging.WARNING)
 
-        client.messages.create(from_=TWILIO_WHATSAPP_NUMBER, body=message, to=to_number)
+        twilio_client.messages.create(
+            from_=TWILIO_WHATSAPP_NUMBER,
+            body=message,
+            to=to_number
+        )
     except Exception as e:
         logging.error(f"Error enviando mensaje: {str(e)}")
         raise e
