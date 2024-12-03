@@ -34,16 +34,11 @@ async def receive_message(request: Request):
         message, from_number = await twilio_chat.process_incoming_message(form_data)
 
         if message and from_number:
-            # Log del mensaje recibido
             logging.info(f"Mensaje recibido - Número: {from_number} | Mensaje: {message}")
 
-            # Limpiar el número de teléfono para usarlo como nombre de archivo
-            clean_number = from_number.replace("whatsapp:", "").replace("+", "")
-
             # Obtener respuesta de OpenAI con historial
-            ai_response = get_completion(message, from_number)  # Usar from_number directamente
+            ai_response = get_completion(message, from_number)
 
-            # Log de la respuesta del bot
             logging.info(f"Respuesta enviada - Número: {from_number} | Respuesta: {ai_response}")
 
         return Response(

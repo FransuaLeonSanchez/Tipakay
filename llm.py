@@ -16,11 +16,17 @@ class OpenAIClient:
         return cls._instance
 
 
-def check_and_format_number(phone_number: str) -> str:
-    """Asegura que el número tenga el prefijo whatsapp: correcto"""
-    if not phone_number.startswith("whatsapp:"):
-        return f"whatsapp:{phone_number}"
+def clean_phone_number(phone_number: str) -> str:
+    """Elimina cualquier prefijo o caracteres especiales del número"""
+    return phone_number.replace("whatsapp:", "").replace("+", "")
+
+
+def format_whatsapp_number(phone_number: str) -> str:
+    """Formatea el número para WhatsApp"""
+    if not phone_number.startswith('whatsapp:'):
+        return f'whatsapp:+{phone_number}'
     return phone_number
+
 
 def send_twilio_response(formatted_number: str, response_content: str, media_url: str = None):
     """Función auxiliar para enviar mensajes vía Twilio una sola vez"""
@@ -36,10 +42,14 @@ def send_twilio_response(formatted_number: str, response_content: str, media_url
             message=response_content
         )
 
+
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
+        # Limpiar número para la base de datos
+        clean_number = clean_phone_number(phone_number)
+
         # Cargar historial existente
-        history = get_chat_history(phone_number)
+        history = get_chat_history(clean_number)
 
         # Crear mensaje del usuario
         user_message = {
@@ -49,7 +59,7 @@ def get_completion(prompt: str, phone_number: str) -> str:
         }
 
         # Actualizar historial con mensaje del usuario
-        history = update_chat_history(phone_number, user_message)
+        history = update_chat_history(clean_number, user_message)
 
         # Preparar mensajes para OpenAI
         messages = [
@@ -57,7 +67,7 @@ def get_completion(prompt: str, phone_number: str) -> str:
         ]
 
         # Obtener respuesta de OpenAI
-        logging.info(f"Consultando a OpenAI para el número: {phone_number}")
+        logging.info(f"Consultando a OpenAI para el número: {clean_number}")
         try:
             client = OpenAIClient.get_client()
             completion = client.chat.completions.create(
@@ -75,8 +85,25 @@ def get_completion(prompt: str, phone_number: str) -> str:
             response_lower = response_content.lower()
             keywords = ["echowave", "smart", "audio", "hogar", "precios"]
 
-            # Formatear número para cualquier caso
-            formatted_number = check_and_format_number(phone_number)
+            # Formatear número para WhatsApp
+            whatsapp_number = format_whatsapp_number(clean_number)
+
+            # Crear mensaje del asistente con la respuesta ya limpia y limitada
+            assistant_message = {
+                "role": "assistant",
+                "content": response_content,
+                "timestamp": datetime.now().isoformat(),
+            }
+
+            # Actualizar historial con respuesta del asistente
+            update_chat_history(clean_number, assistant_message)
+
+            # Limitar la respuesta a 1600 caracteres si es más larga
+            if len(response_content) > 1590:
+                response_content = response_content[:1587] + "..."
+                logging.info(
+                    f"Respuesta truncada a 1600 caracteres para el número: {clean_number}"
+                )
 
             # Enviar mensaje según condición
             if all(keyword in response_lower for keyword in keywords):
@@ -86,16 +113,16 @@ def get_completion(prompt: str, phone_number: str) -> str:
                     "content": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
                     "timestamp": datetime.now().isoformat(),
                 }
-                update_chat_history(phone_number, media_message)
+                update_chat_history(clean_number, media_message)
 
                 send_twilio_response(
-                    formatted_number=formatted_number,
+                    formatted_number=whatsapp_number,
                     response_content=response_content,
                     media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
                 )
             else:
                 send_twilio_response(
-                    formatted_number=formatted_number,
+                    formatted_number=whatsapp_number,
                     response_content=response_content
                 )
 
