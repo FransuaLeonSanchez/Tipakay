@@ -141,7 +141,7 @@ def get_completion(prompt: str, phone_number: str) -> str:
 
             if all(keyword in response_lower for keyword in keywords):
                 media_message = {
-                    "role": "media_assistant",
+                    "role": "assistant",
                     "content": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
                     "timestamp": datetime.now().isoformat(),
                 }
