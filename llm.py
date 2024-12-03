@@ -22,6 +22,19 @@ def check_and_format_number(phone_number: str) -> str:
         return f"whatsapp:{phone_number}"
     return phone_number
 
+def send_twilio_response(formatted_number: str, response_content: str, media_url: str = None):
+    """Función auxiliar para enviar mensajes vía Twilio una sola vez"""
+    if media_url:
+        twilio_chat.send_message_with_media(
+            to_number=formatted_number,
+            message=response_content,
+            media_url=media_url
+        )
+    else:
+        twilio_chat.send_message(
+            to_number=formatted_number,
+            message=response_content
+        )
 
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
@@ -65,23 +78,6 @@ def get_completion(prompt: str, phone_number: str) -> str:
             # Formatear número para cualquier caso
             formatted_number = check_and_format_number(phone_number)
 
-            # Limitar la respuesta a 1600 caracteres si es más larga
-            if len(response_content) > 1590:
-                response_content = response_content[:1587] + "..."
-                logging.info(
-                    f"Respuesta truncada a 1600 caracteres para el número: {phone_number}"
-                )
-
-            # Crear mensaje del asistente con la respuesta ya limpia y limitada
-            assistant_message = {
-                "role": "assistant",
-                "content": response_content,
-                "timestamp": datetime.now().isoformat(),
-            }
-
-            # Actualizar historial con respuesta del asistente
-            update_chat_history(phone_number, assistant_message)
-
             # Enviar mensaje según condición
             if all(keyword in response_lower for keyword in keywords):
                 # Si todas las palabras clave están presentes, registrar la imagen
@@ -92,16 +88,15 @@ def get_completion(prompt: str, phone_number: str) -> str:
                 }
                 update_chat_history(phone_number, media_message)
 
-                # Enviar mensaje con media
-                twilio_chat.send_message_with_media(
-                    to_number=formatted_number,
-                    message=response_content,
-                    media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
+                send_twilio_response(
+                    formatted_number=formatted_number,
+                    response_content=response_content,
+                    media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
                 )
             else:
-                # Enviar mensaje normal
-                twilio_chat.send_message(
-                    to_number=formatted_number, message=response_content
+                send_twilio_response(
+                    formatted_number=formatted_number,
+                    response_content=response_content
                 )
 
             return response_content
