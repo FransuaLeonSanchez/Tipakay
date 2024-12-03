@@ -63,6 +63,26 @@ def get_cached_completion(messages_key):
     return completion.choices[0].message.content
 
 
+def clear_cache_for_number(phone_number: str):
+    """Limpia el caché de respuestas para un número específico"""
+    # Obtener información actual del caché
+    cache_info = get_cached_completion.cache_info()
+
+    if cache_info.currsize > 0:
+        # Crear una nueva caché excluyendo las entradas del número específico
+        new_cache = {
+            key: value
+            for key, value in get_cached_completion.cache_items()
+            if key[0] != phone_number
+        }
+
+        # Limpiar el caché actual
+        get_cached_completion.cache_clear()
+
+        # Restaurar el caché sin las entradas del número eliminado
+        for key, value in new_cache.items():
+            get_cached_completion.cache_info[key] = value
+
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
         # Limpiar número para la base de datos

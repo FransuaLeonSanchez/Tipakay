@@ -139,7 +139,7 @@ def update_chat_history(phone_number: str, new_message: dict):
 
 
 def delete_chat_history(phone_number: str) -> bool:
-    """Elimina el historial de chat de un número específico"""
+    """Elimina el historial de chat y el caché de un número específico"""
     conn = get_db_connection()
     if not conn:
         return False
@@ -155,6 +155,11 @@ def delete_chat_history(phone_number: str) -> bool:
         )
 
         conn.commit()
+
+        # Limpiar el caché para este número
+        from llm import clear_cache_for_number
+        clear_cache_for_number(phone_number)
+
         # Retorna True si se eliminó algún registro
         return cursor.rowcount > 0
     except Exception as e:
