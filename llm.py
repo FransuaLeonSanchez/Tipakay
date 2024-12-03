@@ -44,18 +44,20 @@ def send_twilio_response(formatted_number: str, response_content: str, media_url
         )
 
 
-def messages_to_tuple(messages):
-    """Convierte la lista de mensajes a una tupla que puede ser cacheada"""
-    return tuple((msg["role"], msg["content"]) for msg in messages)
+def messages_to_tuple(messages, phone_number):
+    """Convierte la lista de mensajes y el número de teléfono a una tupla que puede ser cacheada"""
+    messages_tuple = tuple((msg["role"], msg["content"]) for msg in messages)
+    return (phone_number, messages_tuple)  # Incluimos el número como parte de la clave
 
 
-@lru_cache(maxsize=100)
-def get_cached_completion(messages_tuple):
+@lru_cache(maxsize=1000)  # Aumentamos el tamaño para manejar más usuarios
+def get_cached_completion(messages_key):
     """Obtiene una respuesta cacheada de OpenAI"""
+    phone_number, messages = messages_key
     client = OpenAIClient.get_client()
     completion = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL"),
-        messages=[{"role": role, "content": content} for role, content in messages_tuple],
+        messages=[{"role": role, "content": content} for role, content in messages],
         timeout=30,
     )
     return completion.choices[0].message.content
@@ -79,9 +81,12 @@ def get_completion(prompt: str, phone_number: str) -> str:
         # Obtener respuesta de OpenAI
         logging.info(f"Consultando a OpenAI para el número: {clean_number}")
         try:
+            # Convertir mensajes a formato cacheable incluyendo el número
+            messages_key = messages_to_tuple(messages, clean_number)
+
             # Intentar obtener respuesta del caché
             try:
-                response_content = get_cached_completion(messages_tuple)
+                response_content = get_cached_completion(messages_key)
                 logging.info(f"Respuesta obtenida del caché para el número: {clean_number}")
             except Exception as cache_error:
                 logging.error(f"Error al obtener del caché: {cache_error}")
