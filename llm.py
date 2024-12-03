@@ -89,7 +89,7 @@ PRODUCT_TRIGGERS = {
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
     },
     "airbeat": {
-        "keywords": ["airbeat", "audifonos", "sonido", "precios", "unidades"],
+        "keywords": ["airbeat", "egonómico", "sonido", "precios", "unidades"],
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
     }
 }
