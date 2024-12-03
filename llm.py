@@ -15,6 +15,11 @@ class OpenAIClient:
             cls._instance = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         return cls._instance
 
+def check_and_format_number(phone_number: str) -> str:
+    """Asegura que el número tenga el prefijo whatsapp: correcto"""
+    if not phone_number.startswith('whatsapp:'):
+        return f'whatsapp:{phone_number}'
+    return phone_number
 
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
@@ -55,6 +60,9 @@ def get_completion(prompt: str, phone_number: str) -> str:
             response_lower = response_content.lower()
             keywords = ["echowave", "smart", "audio", "hogar", "precios"]
             if all(keyword in response_lower for keyword in keywords):
+                # Asegurar formato correcto del número
+                formatted_number = check_and_format_number(phone_number)
+
                 # Si todas las palabras clave están presentes, registrar la imagen
                 media_message = {
                     "role": "media_assistant",
@@ -63,9 +71,9 @@ def get_completion(prompt: str, phone_number: str) -> str:
                 }
                 update_chat_history(phone_number, media_message)
 
-                # Enviar imagen por Twilio
+                # Enviar imagen por Twilio con número formateado
                 twilio_chat.send_message_with_media(
-                    to_number=phone_number,
+                    to_number=formatted_number,
                     message=response_content,
                     media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
                 )
@@ -88,8 +96,9 @@ def get_completion(prompt: str, phone_number: str) -> str:
             # Actualizar historial con respuesta del asistente
             update_chat_history(phone_number, assistant_message)
 
-            # Enviar mensaje normal por Twilio si no se detectaron las palabras clave
-            twilio_chat.send_message(to_number=phone_number, message=response_content)
+            # También formatear el número para el mensaje normal
+            formatted_number = check_and_format_number(phone_number)
+            twilio_chat.send_message(to_number=formatted_number, message=response_content)
 
             return response_content
         except Exception as openai_error:
