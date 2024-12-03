@@ -75,8 +75,8 @@ def get_completion(prompt: str, phone_number: str) -> str:
             {"role": msg["role"], "content": msg["content"]} for msg in history[-10:]
         ]
 
-        # Convertir mensajes a formato cacheable
-        messages_tuple = messages_to_tuple(messages)
+        # Añadir el mensaje actual del usuario
+        messages.append({"role": "user", "content": prompt})
 
         # Obtener respuesta de OpenAI
         logging.info(f"Consultando a OpenAI para el número: {clean_number}")
