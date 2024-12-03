@@ -83,6 +83,17 @@ def clear_cache_for_number(phone_number: str):
         for key, value in new_cache.items():
             get_cached_completion.cache_info[key] = value
 
+PRODUCT_TRIGGERS = {
+    "echowave": {
+        "keywords": ["echowave", "smart", "audio", "hogar", "precios"],
+        "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
+    },
+    "airbeat": {
+        "keywords": ["airbeat", "audifonos", "sonido", "precios", "unidades"],
+        "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
+    }
+}
+
 def get_completion(prompt: str, phone_number: str) -> str:
     try:
         # Limpiar número para la base de datos
@@ -92,7 +103,9 @@ def get_completion(prompt: str, phone_number: str) -> str:
         # Cargar historial existente solo para el contexto de OpenAI
         history = get_chat_history(clean_number)
         messages = [
-            {"role": msg["role"], "content": msg["content"]} for msg in history[-10:]
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in history[-10:]
+            if msg["role"] in ["system", "assistant", "user", "function", "tool"]
         ]
 
         # Añadir el mensaje actual del usuario
@@ -127,45 +140,44 @@ def get_completion(prompt: str, phone_number: str) -> str:
                 response_content = response_content[:1587] + "..."
                 logging.info(f"Respuesta truncada a 1600 caracteres para el número: {clean_number}")
 
-            # Verificar keywords y enviar respuesta primero
+            # Verificar triggers de productos
             response_lower = response_content.lower()
-            keywords = ["echowave", "smart", "audio", "hogar", "precios"]
+            media_url = None
 
-            # Primero enviar respuesta vía Twilio
-            if all(keyword in response_lower for keyword in keywords):
-                send_twilio_response(
-                    formatted_number=whatsapp_number,
-                    response_content=response_content,
-                    media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
-                )
-            else:
-                send_twilio_response(
-                    formatted_number=whatsapp_number,
-                    response_content=response_content
-                )
+            for product in PRODUCT_TRIGGERS.values():
+                if all(keyword in response_lower for keyword in product["keywords"]):
+                    media_url = product["media_url"]
+                    break
 
-            # Luego actualizar la base de datos
-            user_message = {
+            # Enviar respuesta vía Twilio
+            send_twilio_response(
+                formatted_number=whatsapp_number,
+                response_content=response_content,
+                media_url=media_url
+            )
+
+            # Actualizar la base de datos
+            # Mensaje del usuario
+            update_chat_history(clean_number, {
                 "role": "user",
                 "content": prompt,
                 "timestamp": datetime.now().isoformat(),
-            }
-            update_chat_history(clean_number, user_message)
+            })
 
-            assistant_message = {
+            # Mensaje del asistente
+            update_chat_history(clean_number, {
                 "role": "assistant",
                 "content": response_content,
                 "timestamp": datetime.now().isoformat(),
-            }
-            update_chat_history(clean_number, assistant_message)
+            })
 
-            if all(keyword in response_lower for keyword in keywords):
-                media_message = {
+            # Si hay media, guardar también ese mensaje
+            if media_url:
+                update_chat_history(clean_number, {
                     "role": "assistant",
-                    "content": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
+                    "content": media_url,
                     "timestamp": datetime.now().isoformat(),
-                }
-                update_chat_history(clean_number, media_message)
+                })
 
             # Imprimir info del caché
             info = get_cached_completion.cache_info()
@@ -176,7 +188,6 @@ def get_completion(prompt: str, phone_number: str) -> str:
         except Exception as openai_error:
             error_detail = str(openai_error)
             logging.error(f"Error en la llamada a OpenAI: {error_detail}")
-            # Verificar el tipo de error
             if "api_key" in error_detail.lower():
                 return "Error de configuración: Problema con la API key de OpenAI"
             elif "timeout" in error_detail.lower():
