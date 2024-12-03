@@ -47,21 +47,10 @@ def get_completion(prompt: str, phone_number: str) -> str:
     try:
         # Limpiar número para la base de datos
         clean_number = clean_phone_number(phone_number)
+        whatsapp_number = format_whatsapp_number(clean_number)
 
-        # Cargar historial existente
+        # Cargar historial existente solo para el contexto de OpenAI
         history = get_chat_history(clean_number)
-
-        # Crear mensaje del usuario
-        user_message = {
-            "role": "user",
-            "content": prompt,
-            "timestamp": datetime.now().isoformat(),
-        }
-
-        # Actualizar historial con mensaje del usuario
-        history = update_chat_history(clean_number, user_message)
-
-        # Preparar mensajes para OpenAI
         messages = [
             {"role": msg["role"], "content": msg["content"]} for msg in history[-10:]
         ]
@@ -76,45 +65,21 @@ def get_completion(prompt: str, phone_number: str) -> str:
                 timeout=30,
             )
 
-            # Obtener y limpiar la respuesta inmediatamente
+            # Procesar respuesta
             response_content = completion.choices[0].message.content
             response_content = response_content.replace("<", "").replace(">", "")
             response_content = response_content.replace("**", "*")
 
-            # Convertir el texto a minúsculas y verificar las palabras clave
+            if len(response_content) > 1590:
+                response_content = response_content[:1587] + "..."
+                logging.info(f"Respuesta truncada a 1600 caracteres para el número: {clean_number}")
+
+            # Verificar keywords y enviar respuesta primero
             response_lower = response_content.lower()
             keywords = ["echowave", "smart", "audio", "hogar", "precios"]
 
-            # Formatear número para WhatsApp
-            whatsapp_number = format_whatsapp_number(clean_number)
-
-            # Crear mensaje del asistente con la respuesta ya limpia y limitada
-            assistant_message = {
-                "role": "assistant",
-                "content": response_content,
-                "timestamp": datetime.now().isoformat(),
-            }
-
-            # Actualizar historial con respuesta del asistente
-            update_chat_history(clean_number, assistant_message)
-
-            # Limitar la respuesta a 1600 caracteres si es más larga
-            if len(response_content) > 1590:
-                response_content = response_content[:1587] + "..."
-                logging.info(
-                    f"Respuesta truncada a 1600 caracteres para el número: {clean_number}"
-                )
-
-            # Enviar mensaje según condición
+            # Primero enviar respuesta vía Twilio
             if all(keyword in response_lower for keyword in keywords):
-                # Si todas las palabras clave están presentes, registrar la imagen
-                media_message = {
-                    "role": "media_assistant",
-                    "content": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
-                    "timestamp": datetime.now().isoformat(),
-                }
-                update_chat_history(clean_number, media_message)
-
                 send_twilio_response(
                     formatted_number=whatsapp_number,
                     response_content=response_content,
@@ -125,6 +90,29 @@ def get_completion(prompt: str, phone_number: str) -> str:
                     formatted_number=whatsapp_number,
                     response_content=response_content
                 )
+
+            # Luego actualizar la base de datos
+            user_message = {
+                "role": "user",
+                "content": prompt,
+                "timestamp": datetime.now().isoformat(),
+            }
+            update_chat_history(clean_number, user_message)
+
+            assistant_message = {
+                "role": "assistant",
+                "content": response_content,
+                "timestamp": datetime.now().isoformat(),
+            }
+            update_chat_history(clean_number, assistant_message)
+
+            if all(keyword in response_lower for keyword in keywords):
+                media_message = {
+                    "role": "media_assistant",
+                    "content": "https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
+                    "timestamp": datetime.now().isoformat(),
+                }
+                update_chat_history(clean_number, media_message)
 
             return response_content
 
