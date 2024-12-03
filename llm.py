@@ -97,11 +97,11 @@ PRODUCT_TRIGGERS = {
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/glidefit_fgs.jpg"
     },
     "snapshot": {
-        "keywords": ["drone", "avanzada", "cámara", "precios", "unidades"],
+        "keywords": ["drone", "fotografía", "cámara", "precios", "unidades"],
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/snapshot_sdm.jpg"
     },
     "prostream": {
-        "keywords": ["prostream", "cámara", "streaming", "precios", "unidades"],
+        "keywords": ["prostream", "sonido", "usb", "precios", "unidades"],
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/prostream_pwm.jpg"
     }
 }
