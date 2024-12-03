@@ -47,6 +47,7 @@ def send_message(to_number: str, message: str) -> None:
         logging.error(f"Error enviando mensaje: {str(e)}")
         raise e
 
+
 def send_message_with_media(to_number: str, message: str, media_url: str) -> None:
     try:
         twilio_client = get_twilio_client()
@@ -56,7 +57,7 @@ def send_message_with_media(to_number: str, message: str, media_url: str) -> Non
             from_=TWILIO_WHATSAPP_NUMBER,
             body=message,
             media_url=[media_url],  # Lista de URLs de media
-            to=to_number
+            to=to_number,
         )
     except Exception as e:
         logging.error(f"Error enviando mensaje con media: {str(e)}")

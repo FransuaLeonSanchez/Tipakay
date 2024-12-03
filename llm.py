@@ -18,8 +18,8 @@ class OpenAIClient:
 
 def check_and_format_number(phone_number: str) -> str:
     """Asegura que el número tenga el prefijo whatsapp: correcto"""
-    if not phone_number.startswith('whatsapp:'):
-        return f'whatsapp:{phone_number}'
+    if not phone_number.startswith("whatsapp:"):
+        return f"whatsapp:{phone_number}"
     return phone_number
 
 
@@ -96,11 +96,13 @@ def get_completion(prompt: str, phone_number: str) -> str:
                 twilio_chat.send_message_with_media(
                     to_number=formatted_number,
                     message=response_content,
-                    media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg"
+                    media_url="https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg",
                 )
             else:
                 # Enviar mensaje normal
-                twilio_chat.send_message(to_number=formatted_number, message=response_content)
+                twilio_chat.send_message(
+                    to_number=formatted_number, message=response_content
+                )
 
             return response_content
 

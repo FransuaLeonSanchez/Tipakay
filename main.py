@@ -42,16 +42,13 @@ async def receive_message(request: Request):
             # Limpiar el número de teléfono para usarlo como nombre de archivo
             clean_number = from_number.replace("whatsapp:", "").replace("+", "")
 
-            # Obtener respuesta de OpenAI con historial
+            # Obtener respuesta de OpenAI con historial y enviar mensaje
             ai_response = get_completion(message, clean_number)
 
             # Log de la respuesta del bot
             logging.info(
                 f"Respuesta enviada - Número: {from_number} | Respuesta: {ai_response}"
             )
-
-            # Enviar respuesta vía Twilio
-            twilio_chat.send_message(from_number, ai_response)
 
         return Response(
             content="<?xml version='1.0' encoding='UTF-8'?><Response></Response>",
