@@ -91,6 +91,18 @@ PRODUCT_TRIGGERS = {
     "airbeat": {
         "keywords": ["airbeat", "ergonómico", "sonido", "precios", "unidades"],
         "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
+    },
+    "glidefit": {
+        "keywords": ["glidefit", "completo", "deportivo", "precios", "unidades"],
+        "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
+    },
+    "snapshot": {
+        "keywords": ["drone", "avanzada", "cámara", "precios", "unidades"],
+        "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
+    },
+    "prostream": {
+        "keywords": ["prostream", "cámara", "streaming", "precios", "unidades"],
+        "media_url": "https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg"
     }
 }
 
