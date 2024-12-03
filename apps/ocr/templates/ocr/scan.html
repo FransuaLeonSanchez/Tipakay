@@ -17,17 +17,132 @@
           <h5 class="card-title">OCR Scanner</h5>
         </div>
         <div class="card-body">
-          <form method="post" enctype="multipart/form-data">
+          <form id="scanForm" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="mb-3">
               <label for="document" class="form-label">Seleccionar documento</label>
-              <input type="file" class="form-control" id="document" name="document">
+              <input type="file" class="form-control" id="document" name="document" accept="image/*" onchange="previewImage(this);">
             </div>
-            <button type="submit" class="btn btn-primary">Escanear</button>
+            <div class="mb-3">
+              <div id="imagePreviewContainer" style="display: none;" class="position-relative">
+                <img id="imagePreview" src="#" alt="Vista previa" class="img-fluid rounded" style="max-height: 300px;">
+                <button type="button" 
+                        class="btn btn-icon btn-outline-danger waves-effect position-absolute top-0 end-0 m-2"
+                        onclick="removeImage()">
+                  <i class="ti ti-trash"></i>
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary waves-effect waves-light">
+              <i class="ti ti-scan"></i>
+              <span class="ms-1">Escanear</span>
+            </button>
           </form>
+
+          <!-- Contenedor de resultados -->
+          <div id="resultContainer" class="mt-4" style="display: none;">
+            <div class="card">
+              <h5 class="card-header">Resultado del Escaneo</h5>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th>N°</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Fecha</th>
+                        <th>Dirección</th>
+                      </tr>
+                    </thead>
+                    <tbody id="resultTableBody">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
-{% endblock content %}  
+
+<script>
+function previewImage(input) {
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            previewContainer.style.display = 'block';
+        }
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        removeImage();
+    }
+}
+
+function removeImage() {
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    const fileInput = document.getElementById('document');
+    
+    preview.src = '#';
+    previewContainer.style.display = 'none';
+    fileInput.value = '';
+}
+
+document.getElementById('scanForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitButton = this.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="ti ti-loader animate-spin"></i> Procesando...';
+    
+    fetch('', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultContainer = document.getElementById('resultContainer');
+        const tableBody = document.getElementById('resultTableBody');
+        
+        // Limpiar tabla anterior
+        tableBody.innerHTML = '';
+        
+        // Llenar tabla con nuevos datos
+        data.records.forEach(record => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record.numero}</td>
+                <td>${record.name}</td>
+                <td>${record.category}</td>
+                <td>${record.insertion_date}</td>
+                <td>${record.address || ''}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        resultContainer.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al procesar la imagen');
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="ti ti-scan"></i><span class="ms-1">Escanear</span>';
+    });
+});
+</script>
+{% endblock content %}

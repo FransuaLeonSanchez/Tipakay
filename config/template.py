@@ -40,7 +40,7 @@ THEME_VARIABLES = {
     "creator_name": "PixInvent",
     "creator_url": "https://pixinvent.com/",
     "template_name": "AIVendo",
-    "template_suffix": "Django Admin Template",
+    "template_suffix": "",
     "template_version": "1.0.0",
     "template_free": False,
     "template_description": "Vuexy is a modern, clean and fully responsive admin template built with Bootstrap 5, Django, HTML, CSS, jQuery, and JavaScript. It has a huge collection of reusable UI components and integrated with the latest jQuery plugins. It can be used for all types of web applications like custom admin panel, project management system, admin dashboard, Backend application or CRM.",

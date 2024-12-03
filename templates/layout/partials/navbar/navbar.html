@@ -94,7 +94,7 @@
           {% endif %}
 
           <!-- Quick links  -->
-          <li class="nav-item dropdown-shortcuts navbar-dropdown dropdown me-2 me-xl-0">
+          <!--li class="nav-item dropdown-shortcuts navbar-dropdown dropdown me-2 me-xl-0">
             <a class="nav-link dropdown-toggle hide-arrow" href="javascript:void(0);" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
               <i class='ti ti-layout-grid-add ti-md'></i>
             </a>
@@ -185,7 +185,7 @@
               <div class="avatar avatar-online">
 
                 {% if request.user|has_group:"admin" %}
-                <img src="{% static 'img/avatars/1.png' %}" alt class="h-auto rounded-circle">
+                <img src="{% static 'img/avatars/sinperfil2.png' %}" alt class="h-auto rounded-circle">
                 {% else %}
                 <img src="{% static 'img/avatars/3.png' %}" alt class="h-auto rounded-circle">
                 {% endif %}
@@ -197,7 +197,7 @@
                   <div class="d-flex">
                     <div class="flex-shrink-0 me-3">
                       {% if request.user|has_group:"admin" %}
-                      <img src="{% static 'img/avatars/1.png' %}" alt class="w-px-40 h-auto rounded-circle">
+                      <img src="{% static 'img/avatars/sinperfil2.png' %}" alt class="w-px-40 h-auto rounded-circle">
                       {% else %}
                       <img src="{% static 'img/avatars/3.png' %}" alt class="w-px-40 h-auto rounded-circle">
                       {% endif %}
@@ -211,67 +211,17 @@
                   </div>
                 </a>
               </li>
+              
+              
+              
+             
               <li>
                 <div class="dropdown-divider"></div>
               </li>
-              <li>
-                <a class="dropdown-item" href="{% url 'pages-profile-user' %}">
-                  <i class="ti ti-user-check me-2 ti-sm"></i>
-                  <span class="align-middle">My Profile</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="{% url 'pages-account-settings-account' %}">
-                  <i class="ti ti-settings me-2 ti-sm"></i>
-                  <span class="align-middle">Settings</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="{% url 'pages-account-settings-billing' %}">
-                  <span class="d-flex align-items-center align-middle">
-                    <i class="flex-shrink-0 ti ti-credit-card me-2 ti-sm"></i>
-                    <span class="flex-grow-1 align-middle">Billing</span>
-                    <span class="flex-shrink-0 badge badge-center rounded-pill bg-label-danger w-px-20 h-px-20">2</span>
-                  </span>
-                </a>
-              </li>
-              <li>
-                <div class="dropdown-divider"></div>
-              </li>
-              <li>
-                <a class="dropdown-item" href="{% url 'pages-faq' %}">
-                  <i class="ti ti-help me-2 ti-sm"></i>
-                  <span class="align-middle">FAQ</span>
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="{% url 'pages-pricing' %}">
-                  <i class="ti ti-currency-dollar me-2 ti-sm"></i>
-                  <span class="align-middle">Pricing</span>
-                </a>
-              </li>
-              <li>
-                <div class="dropdown-divider"></div>
-              </li>
-              <li>
-                {% if request.user.is_authenticated and request.user.profile.is_verified %}
-                <span class="dropdown-item d-flex justify-content-between align-content-center">
-                  <span>
-                    <i class='ti ti-user-circle me-2 ti-sm'></i>
-                    <span class="align-middle">Verified</span>
-                  </span>
-                  <span class="text-success"><i class='ti ti-circle-check ti-sm'></i></span>
-                </span>
-                {% else %}
-                <a class="dropdown-item d-flex justify-content-between align-content-center" href="{% url 'verify-email-page' %}">
-                  <span>
-                    <i class='ti ti-user-circle me-2 ti-sm'></i>
-                    <span class="align-middle">Not Verified</span>
-                  </span>
-                  <span class="text-danger"><i class='ti ti-circle-x ti-sm'></i></span>
-                </a>
-                {% endif %}
-              </li>
+              
+              
+              
+              
               <li>
                 <form action="{% url 'logout' %}" method="post">
                   {% csrf_token %}

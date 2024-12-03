@@ -15,18 +15,6 @@
           "url": "dashboard-crm",
           "name": "CRM",
           "slug": "dashboard-crm"
-        },
-        {
-          "url": "/app/ecommerce/dashboard",
-          "external": true,
-          "name": "eCommerce",
-          "slug": "app-ecommerce-dashboard"
-        },
-        {
-          "url": "/app/logistics/dashboard",
-          "external": true,
-          "name": "Logistics",
-          "slug": "app-logistics-dashboard"
         }
       ]
     },
@@ -38,47 +26,17 @@
       "slug": "app-chat"
     },
     {
+      "url": "app-ocr-scan",
       "name": "OCR",
       "icon": "menu-icon tf-icons ti ti-scan",
-      "slug": "app-ocr",
-      "submenu": [
-        {
-          "url": "app-ocr-dashboard",
-          "name": "Dashboard",
-          "slug": "app-ocr-dashboard"
-        },
-        {
-          "url": "app-ocr-scan",
-          "name": "Scan Document",
-          "slug": "app-ocr-scan"
-        }
-      ]
-    },
-    {
-      "name": "Logistics",
-      "icon": "menu-icon tf-icons ti ti-truck",
-      "slug": "app-logistics",
-      "submenu": [
-        {
-          "url": "app-logistics-dashboard",
-          "name": "Dashboard",
-          "slug": "app-logistics-dashboard"
-        }
-      ]
+      "slug": "app-ocr"
     },
 
     {
-      "name": "Users",
-      "icon": "menu-icon tf-icons ti ti-users",
-      "permission": "user.view_user",
-      "slug": "app-user",
-      "submenu": [
-        {
-          "url": "app-user-list",
-          "name": "List",
-          "slug": "app-user-list"
-        }
-      ]
+      "url": "app-invoice-list",
+      "name": "Clients",
+      "icon": "menu-icon tf-icons ti ti-file-dollar",
+      "slug": "app-invoice"
     }
   ]
 }
