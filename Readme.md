@@ -7,7 +7,7 @@ AIVendo is an AI-powered CRM platform designed to optimize sales and customer ma
 ## 🎥 Demo CRM
 
 <p align="center">
-  <img src="./assets/gifs/videoDemo.gif" alt="Demo del CRM">
+  <img src="./assets/gifs/videodemo.gif" alt="Demo del CRM">
 </p>
 
 ## 💡 Key Features
