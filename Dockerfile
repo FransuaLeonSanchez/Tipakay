@@ -1,21 +1,28 @@
-FROM python:3.9
+FROM python:3.10-slim
 
-ARG APP_HOME=/app
-WORKDIR ${APP_HOME}
+WORKDIR /app
 
-# set environment variables
+# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-COPY requirements.txt ${APP_HOME}
-# install python dependencies
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential libpq-dev && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
 
-COPY . ${APP_HOME}
+COPY requirements.txt /app/
 
-# running migrations
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+  pip install -r requirements.txt
+
+COPY . /app/
+
+# Ensure permissions for all project files
+RUN chmod -R 755 /app
+
+# Run database migrations
 RUN python manage.py migrate
 
-# gunicorn
-CMD ["gunicorn", "--config", "gunicorn-cfg.py", "config.wsgi"]
+# Gunicorn
+CMD ["gunicorn", "-c", "gunicorn-cfg.py", "config.wsgi:application"]
