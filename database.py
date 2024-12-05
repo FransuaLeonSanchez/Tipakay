@@ -144,48 +144,47 @@ def delete_chat_history(phone_number: str) -> bool:
     """Elimina el historial de chat y el caché de un número específico"""
     conn = get_db_connection()
     if not conn:
+        logging.error("No se pudo conectar a la base de datos")
         return False
 
     try:
         cursor = conn.cursor()
 
-        # Primero verificar si existe el registro
-        cursor.execute(
-            """
-            SELECT EXISTS(
-                SELECT 1 FROM conversations WHERE phone_number = %s
-            )
-            """,
-            (phone_number,)
-        )
-        exists = cursor.fetchone()[0]
-
-        if not exists:
-            logging.warning(f"No se encontró conversación para el número: {phone_number}")
-            return False
-
-        # Si existe, eliminar de la BD
+        # Primero intentar la eliminación directamente
         cursor.execute(
             """
             DELETE FROM conversations 
             WHERE phone_number = %s
+            RETURNING phone_number
             """,
             (phone_number,)
         )
+
+        # Obtener el resultado de la eliminación
+        deleted_row = cursor.fetchone()
+
+        # Commit la transacción
         conn.commit()
 
-        # Limpiar el caché
-        from llm import clear_cache_for_number
-        clear_cache_for_number(phone_number)
+        # Si se eliminó algo, limpiar el caché
+        if deleted_row:
+            try:
+                from llm import clear_cache_for_number
+                clear_cache_for_number(phone_number)
+                logging.info(f"Conversación y caché eliminados exitosamente para: {phone_number}")
+            except Exception as cache_error:
+                logging.error(f"Error al limpiar el caché: {str(cache_error)}")
+            return True
 
-        logging.info(f"Conversación y caché eliminados para el número: {phone_number}")
-        return True
+        logging.warning(f"No se encontró conversación en la BD para: {phone_number}")
+        return False
 
     except Exception as e:
-        logging.error(f"Error eliminando chat y caché: {str(e)}")
+        logging.error(f"Error al eliminar conversación: {str(e)}")
         if conn:
             conn.rollback()
         return False
     finally:
         if conn:
+            cursor.close()
             conn.close()

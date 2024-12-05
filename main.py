@@ -72,29 +72,35 @@ async def receive_message(request: Request):
 @app.delete("/conversation/{phone_number}")
 async def delete_conversation(phone_number: str):
     try:
+        # Limpiar el número de teléfono
         clean_number = phone_number.replace("whatsapp:", "").replace("+", "")
+
+        # Log antes de intentar eliminar
+        logger.info(f"Intentando eliminar conversación para número: {clean_number}")
+
+        # Intentar eliminar el registro
         success = delete_chat_history(clean_number)
 
         if success:
-            logger.info(f"Conversación eliminada | Número: {clean_number}")
+            logger.info(f"Conversación eliminada exitosamente - Número: {clean_number}")
             return {
                 "status": "success",
-                "message": f"Conversación eliminada para el número {phone_number}",
+                "message": f"Conversación eliminada para el número {phone_number}"
             }
         else:
-            logger.warning(f"No se encontró conversación | Número: {clean_number}")
+            logger.warning(f"No se encontró conversación para eliminar - Número: {clean_number}")
             return {
                 "status": "not_found",
-                "message": f"No se encontró conversación para el número {phone_number}",
+                "message": f"No se encontró conversación para el número {phone_number}"
             }
 
     except Exception as e:
-        logger.error(
-            f"Error al eliminar conversación | "
-            f"Número: {clean_number if 'clean_number' in locals() else phone_number} | "
-            f"Error: {str(e)}"
-        )
-        return {"status": "error", "message": str(e)}
+        error_msg = str(e)
+        logger.error(f"Error al eliminar conversación - Número: {phone_number} - Error: {error_msg}")
+        return {
+            "status": "error",
+            "message": f"Error al eliminar la conversación: {error_msg}"
+        }
 
 
 @app.get("/health")
