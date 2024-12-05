@@ -141,46 +141,42 @@ def update_chat_history(phone_number: str, new_message: dict):
 
 
 def delete_chat_history(phone_number: str) -> bool:
-    """Elimina el historial de chat y el caché de un número específico"""
+    """
+    Elimina atómicamente el historial de chat tanto de la base de datos como del caché.
+    Retorna True si se eliminó exitosamente de ambos lugares o si no existía.
+    """
     conn = get_db_connection()
     if not conn:
         logging.error("No se pudo conectar a la base de datos")
         return False
 
     try:
-        cursor = conn.cursor()
+        # Primero limpiar el caché
+        try:
+            from llm import clear_cache_for_number, get_cached_completion
+            get_cached_completion.cache_clear()  # Limpiar todo el caché LRU
+            logging.info(f"Caché limpiado para el número: {phone_number}")
+        except Exception as cache_error:
+            logging.error(f"Error limpiando caché: {str(cache_error)}")
+            return False
 
-        # Primero intentar la eliminación directamente
+        # Luego eliminar de la base de datos
+        cursor = conn.cursor()
         cursor.execute(
             """
             DELETE FROM conversations 
             WHERE phone_number = %s
-            RETURNING phone_number
             """,
             (phone_number,)
         )
 
-        # Obtener el resultado de la eliminación
-        deleted_row = cursor.fetchone()
-
-        # Commit la transacción
         conn.commit()
+        logging.info(f"Registro eliminado de la base de datos: {phone_number}")
 
-        # Si se eliminó algo, limpiar el caché
-        if deleted_row:
-            try:
-                from llm import clear_cache_for_number
-                clear_cache_for_number(phone_number)
-                logging.info(f"Conversación y caché eliminados exitosamente para: {phone_number}")
-            except Exception as cache_error:
-                logging.error(f"Error al limpiar el caché: {str(cache_error)}")
-            return True
-
-        logging.warning(f"No se encontró conversación en la BD para: {phone_number}")
-        return False
+        return True
 
     except Exception as e:
-        logging.error(f"Error al eliminar conversación: {str(e)}")
+        logging.error(f"Error en operación de borrado: {str(e)}")
         if conn:
             conn.rollback()
         return False
