@@ -46,7 +46,7 @@ HUAWEI_BUCKET_NAME = os.getenv('HUAWEI_BUCKET_NAME')
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "101.44.189.117"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "101.44.189.117","101.44.185.28"]
 
 # Current DJANGO_ENVIRONMENT
 ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "local")
@@ -264,6 +264,7 @@ SESSION_COOKIE_AGE = 3600
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5050",
     "http://101.44.189.117:8000",
+    "http://101.44.185.28:8000",
 ]
 
 # Default Override...
