@@ -1,3 +1,5 @@
+import logging
+
 from psycopg2.extras import RealDictCursor
 import json
 import psycopg2
@@ -146,24 +148,43 @@ def delete_chat_history(phone_number: str) -> bool:
 
     try:
         cursor = conn.cursor()
+
+        # Primero verificar si existe el registro
+        cursor.execute(
+            """
+            SELECT EXISTS(
+                SELECT 1 FROM conversations WHERE phone_number = %s
+            )
+            """,
+            (phone_number,)
+        )
+        exists = cursor.fetchone()[0]
+
+        if not exists:
+            logging.warning(f"No se encontró conversación para el número: {phone_number}")
+            return False
+
+        # Si existe, eliminar de la BD
         cursor.execute(
             """
             DELETE FROM conversations 
             WHERE phone_number = %s
-        """,
-            (phone_number,),
+            """,
+            (phone_number,)
         )
-
         conn.commit()
 
-        # Limpiar el caché para este número
+        # Limpiar el caché
         from llm import clear_cache_for_number
         clear_cache_for_number(phone_number)
 
-        # Retorna True si se eliminó algún registro
-        return cursor.rowcount > 0
+        logging.info(f"Conversación y caché eliminados para el número: {phone_number}")
+        return True
+
     except Exception as e:
-        print(f"Error deleting chat history: {str(e)}")
+        logging.error(f"Error eliminando chat y caché: {str(e)}")
+        if conn:
+            conn.rollback()
         return False
     finally:
         if conn:

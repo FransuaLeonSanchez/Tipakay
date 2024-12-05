@@ -5,7 +5,11 @@ from datetime import datetime
 from database import get_chat_history, update_chat_history
 import twilio_chat
 from functools import lru_cache
+from functools import lru_cache
+from typing import Dict, Tuple, Any
 
+# Cache global para almacenar las respuestas
+cached_responses: Dict[Tuple[str, Any], str] = {}
 
 class OpenAIClient:
     _instance = None  # Variable privada para almacenar la única instancia
@@ -50,38 +54,43 @@ def messages_to_tuple(messages, phone_number):
     return (phone_number, messages_tuple)  # Incluimos el número como parte de la clave
 
 
-@lru_cache(maxsize=1000)  # Aumentamos el tamaño para manejar más usuarios
+@lru_cache(maxsize=1000)
 def get_cached_completion(messages_key):
     """Obtiene una respuesta cacheada de OpenAI"""
     phone_number, messages = messages_key
+
+    # Si ya está en el caché personalizado, retornarlo
+    if messages_key in cached_responses:
+        return cached_responses[messages_key]
+
+    # Si no está en caché, obtener de OpenAI
     client = OpenAIClient.get_client()
     completion = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL"),
         messages=[{"role": role, "content": content} for role, content in messages],
         timeout=30,
     )
-    return completion.choices[0].message.content
+    response = completion.choices[0].message.content
+
+    # Guardar en ambos cachés
+    cached_responses[messages_key] = response
+    return response
 
 
 def clear_cache_for_number(phone_number: str):
-    """Limpia el caché de respuestas para un número específico"""
-    # Obtener información actual del caché
-    cache_info = get_cached_completion.cache_info()
+    """Limpia el caché para un número específico"""
+    # Limpiar el caché personalizado
+    keys_to_delete = [
+        key for key in cached_responses.keys()
+        if key[0] == phone_number
+    ]
+    for key in keys_to_delete:
+        cached_responses.pop(key, None)
 
-    if cache_info.currsize > 0:
-        # Crear una nueva caché excluyendo las entradas del número específico
-        new_cache = {
-            key: value
-            for key, value in get_cached_completion.cache_items()
-            if key[0] != phone_number
-        }
+    # Limpiar el caché LRU
+    get_cached_completion.cache_clear()
 
-        # Limpiar el caché actual
-        get_cached_completion.cache_clear()
-
-        # Restaurar el caché sin las entradas del número eliminado
-        for key, value in new_cache.items():
-            get_cached_completion.cache_info[key] = value
+    logging.info(f"Caché limpiado para el número: {phone_number}")
 
 PRODUCT_TRIGGERS = {
     "echowave": {
