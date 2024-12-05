@@ -149,7 +149,7 @@ docker build -t tipakay .
 2. Ejecutar el contenedor en segundo plano:
 
 ```bash
-docker run -d --name docker_tipakay -p 5000:5000 tipakay
+docker run -d --name docker_tipakay -p 5000:5000 --restart always tipakay
 ```
 
 Comandos útiles de Docker:
