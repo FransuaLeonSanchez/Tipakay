@@ -4,6 +4,14 @@
 
 AIVendo is an AI-powered CRM platform designed to optimize sales and customer management for small and medium-sized businesses. Built on Huawei Cloud services, it provides advanced tools for document digitization, customer interaction, and business intelligence.
 
+🔗 Quick Access Links
+
+💻 CRM Dashboard
+Access our complete AIVendo CRM Platform here: http://101.44.185.28:8000
+
+💬 WhatsApp Bot
+Chat with our AIVendo WhatsApp Assistant: https://wa.link/on5t0k
+
 ## 🎥 Demo CRM
 
 <p align="center">
@@ -83,16 +91,6 @@ AIVendo is an AI-powered CRM platform designed to optimize sales and customer ma
   - Starter ($300/month)
   - Gold ($600/month)
   - Premium ($900+/month)
-
-## 🚀 Deployment & Implementation
-
-🔗 Quick Access Links
-
-💻 CRM Dashboard
-Access our complete AIVendo CRM Platform here: http://101.44.185.28:8000
-
-💬 WhatsApp Bot
-Chat with our AIVendo WhatsApp Assistant: https://wa.link/on5t0k
 
 ## 📊 Scaling & Future Plans
 
