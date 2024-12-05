@@ -1,4 +1,4 @@
-version: '1.0'
+version: '3.8'
 
 services:
   web-project-django:
@@ -6,24 +6,40 @@ services:
     restart: always
     build: .
     networks:
-      - db_network
       - web_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./django_data:/app/data
 
   web-project-nginx:
     container_name: web_project_nginx
     restart: always
     image: "nginx:latest"
     ports:
-      - "5050:5050"
+      - "80:80"
     volumes:
       - ./nginx:/etc/nginx/conf.d
     networks:
       - web_network
     depends_on:
       - web-project-django
+    environment:
+      - NGINX_HOST=web_project_django
+      - NGINX_PORT=8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
 
 networks:
-  db_network:
-    driver: bridge
   web_network:
     driver: bridge
+
+volumes:
+  db_data:
+    driver: local
