@@ -46,7 +46,7 @@ HUAWEI_BUCKET_NAME = os.getenv('HUAWEI_BUCKET_NAME')
 
 
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "0.0.0.0", "101.44.189.117"]
 
 # Current DJANGO_ENVIRONMENT
 ENVIRONMENT = os.environ.get("DJANGO_ENVIRONMENT", "local")
@@ -255,7 +255,7 @@ LOGOUT_REDIRECT_URL = "/login/"
 # ------------------------------------------------------------------------------
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 
@@ -263,6 +263,7 @@ SESSION_COOKIE_AGE = 3600
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5050",
+    "http://101.44.189.117:8000",
 ]
 
 # Default Override...
@@ -272,3 +273,8 @@ DECIMAL_SEPARATOR = "."
 
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+SECURE_SSL_REDIRECT = False
+CSRF_COOKIE_SECURE = False
+X_FRAME_OPTIONS = 'SAMEORIGIN'
