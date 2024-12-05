@@ -73,14 +73,20 @@ async def receive_message(request: Request):
 async def delete_conversation(phone_number: str):
     try:
         clean_number = phone_number.replace("whatsapp:", "").replace("+", "")
-        logger.info(f"Verificando existencia de datos para número: {clean_number}")
+        logging.info(f"Verificando existencia de datos para número: {clean_number}")
 
-        # Verificar existencia
+        # Verificar existencia en BD
         exists_in_db = check_conversation_exists(clean_number)
-        from llm import get_cached_completion, clear_cache_for_number
-        exists_in_cache = len(get_cached_completion.cache_info().currsize) > 0
+        logging.info(f"Existe en BD: {exists_in_db}")
+
+        # Verificar caché de forma segura
+        from llm import get_cached_completion
+        cache_info = get_cached_completion.cache_info()
+        exists_in_cache = cache_info.currsize > 0
+        logging.info(f"Existe en caché: {exists_in_cache}")
 
         if not exists_in_db and not exists_in_cache:
+            logging.info(f"No se encontraron datos para borrar del número: {clean_number}")
             return {
                 "status": "not_found",
                 "message": "No hay datos que borrar para este número",
@@ -90,52 +96,54 @@ async def delete_conversation(phone_number: str):
                 }
             }
 
-        # Proceder con el borrado
         deletion_status = {
             "cache": False,
             "database": False
         }
 
-        # Intentar borrar caché
+        # Borrar caché primero
         if exists_in_cache:
             try:
+                from llm import clear_cache_for_number
                 clear_cache_for_number()
                 deletion_status["cache"] = True
-                logger.info(f"Caché limpiado para el número: {clean_number}")
+                logging.info(f"Caché limpiado exitosamente para el número: {clean_number}")
             except Exception as e:
-                logger.error(f"Error limpiando caché: {str(e)}")
+                logging.error(f"Error limpiando caché: {str(e)}")
 
-        # Intentar borrar base de datos
+        # Borrar de la base de datos
         if exists_in_db:
             deletion_status["database"] = delete_chat_history(clean_number)
             if deletion_status["database"]:
-                logger.info(f"Base de datos limpiada para el número: {clean_number}")
+                logging.info(f"Registro eliminado de la BD para el número: {clean_number}")
+            else:
+                logging.error(f"No se pudo eliminar el registro de la BD para el número: {clean_number}")
 
-        # Preparar respuesta
-        details = []
+        # Construir respuesta
+        locations = []
         if deletion_status["cache"]:
-            details.append("caché")
+            locations.append("caché")
         if deletion_status["database"]:
-            details.append("base de datos")
+            locations.append("base de datos")
 
-        if details:
+        if locations:
             return {
                 "status": "success",
-                "message": f"Conversación eliminada de: {' y '.join(details)}",
+                "message": f"Conversación eliminada de: {' y '.join(locations)}",
                 "details": deletion_status
             }
         else:
             return {
-                "status": "error",
-                "message": "No se pudo eliminar la conversación de ningún sistema",
+                "status": "not_found",
+                "message": "No se encontraron datos para eliminar",
                 "details": deletion_status
             }
 
     except Exception as e:
-        logger.error(f"Error en proceso de borrado - Número: {clean_number} - Error: {str(e)}")
+        logging.error(f"Error en proceso de borrado - Número: {clean_number} - Error: {str(e)}")
         return {
             "status": "error",
-            "message": f"Error en el proceso: {str(e)}",
+            "message": str(e),
             "details": {
                 "cache_deleted": False,
                 "database_deleted": False

@@ -163,22 +163,37 @@ def delete_chat_history(phone_number: str) -> bool:
         if conn:
             conn.close()
 
+
 def check_conversation_exists(phone_number: str) -> bool:
     """Verifica si existe una conversación en la base de datos"""
     conn = get_db_connection()
     if not conn:
+        logging.error("No se pudo conectar a la base de datos")
         return False
 
     try:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT EXISTS(SELECT 1 FROM conversations WHERE phone_number = %s)",
+            """
+            SELECT EXISTS(
+                SELECT 1 
+                FROM conversations 
+                WHERE phone_number = %s
+            ) as exists
+            """,
             (phone_number,)
         )
-        return cursor.fetchone()[0]
+        result = cursor.fetchone()
+        exists = result['exists'] if result else False
+
+        logging.info(
+            f"Verificación de existencia en BD para número {phone_number}: {'existe' if exists else 'no existe'}")
+        return exists
+
     except Exception as e:
         logging.error(f"Error verificando existencia de conversación: {str(e)}")
         return False
     finally:
         if conn:
+            cursor.close()
             conn.close()
