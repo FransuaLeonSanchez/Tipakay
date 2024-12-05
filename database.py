@@ -141,46 +141,44 @@ def update_chat_history(phone_number: str, new_message: dict):
 
 
 def delete_chat_history(phone_number: str) -> bool:
-    """
-    Elimina atómicamente el historial de chat tanto de la base de datos como del caché.
-    Retorna True si se eliminó exitosamente de ambos lugares o si no existía.
-    """
+    """Elimina el historial de chat de la base de datos"""
     conn = get_db_connection()
     if not conn:
-        logging.error("No se pudo conectar a la base de datos")
         return False
 
     try:
-        # Primero limpiar el caché
-        try:
-            from llm import clear_cache_for_number, get_cached_completion
-            get_cached_completion.cache_clear()  # Limpiar todo el caché LRU
-            logging.info(f"Caché limpiado para el número: {phone_number}")
-        except Exception as cache_error:
-            logging.error(f"Error limpiando caché: {str(cache_error)}")
-            return False
-
-        # Luego eliminar de la base de datos
         cursor = conn.cursor()
         cursor.execute(
-            """
-            DELETE FROM conversations 
-            WHERE phone_number = %s
-            """,
+            "DELETE FROM conversations WHERE phone_number = %s",
             (phone_number,)
         )
-
         conn.commit()
-        logging.info(f"Registro eliminado de la base de datos: {phone_number}")
-
         return True
-
     except Exception as e:
-        logging.error(f"Error en operación de borrado: {str(e)}")
+        logging.error(f"Error eliminando chat de base de datos: {str(e)}")
         if conn:
             conn.rollback()
         return False
     finally:
         if conn:
-            cursor.close()
+            conn.close()
+
+def check_conversation_exists(phone_number: str) -> bool:
+    """Verifica si existe una conversación en la base de datos"""
+    conn = get_db_connection()
+    if not conn:
+        return False
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT EXISTS(SELECT 1 FROM conversations WHERE phone_number = %s)",
+            (phone_number,)
+        )
+        return cursor.fetchone()[0]
+    except Exception as e:
+        logging.error(f"Error verificando existencia de conversación: {str(e)}")
+        return False
+    finally:
+        if conn:
             conn.close()

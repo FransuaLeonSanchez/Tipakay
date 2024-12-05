@@ -6,7 +6,7 @@ import logging
 import time
 import traceback
 
-from database import delete_chat_history, get_db_connection
+from database import delete_chat_history, get_db_connection, check_conversation_exists
 from llm import get_completion
 import twilio_chat
 
@@ -72,45 +72,46 @@ async def receive_message(request: Request):
 @app.delete("/conversation/{phone_number}")
 async def delete_conversation(phone_number: str):
     try:
-        # Limpiar el número de teléfono
         clean_number = phone_number.replace("whatsapp:", "").replace("+", "")
+        logger.info(f"Verificando existencia de datos para número: {clean_number}")
 
-        logger.info(f"Iniciando borrado para número: {clean_number}")
+        # Verificar existencia
+        exists_in_db = check_conversation_exists(clean_number)
+        from llm import get_cached_completion, clear_cache_for_number
+        exists_in_cache = len(get_cached_completion.cache_info().currsize) > 0
 
-        # Para almacenar el estado de cada operación
+        if not exists_in_db and not exists_in_cache:
+            return {
+                "status": "not_found",
+                "message": "No hay datos que borrar para este número",
+                "details": {
+                    "cache_exists": False,
+                    "database_exists": False
+                }
+            }
+
+        # Proceder con el borrado
         deletion_status = {
             "cache": False,
             "database": False
         }
 
-        try:
-            # Intentar limpiar caché
-            from llm import clear_cache_for_number, get_cached_completion
-            get_cached_completion.cache_clear()
-            deletion_status["cache"] = True
-            logger.info(f"Caché limpiado para el número: {clean_number}")
-        except Exception as cache_error:
-            logger.error(f"Error limpiando caché: {str(cache_error)}")
+        # Intentar borrar caché
+        if exists_in_cache:
+            try:
+                clear_cache_for_number()
+                deletion_status["cache"] = True
+                logger.info(f"Caché limpiado para el número: {clean_number}")
+            except Exception as e:
+                logger.error(f"Error limpiando caché: {str(e)}")
 
-        try:
-            # Intentar eliminar de la base de datos
-            conn = get_db_connection()
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "DELETE FROM conversations WHERE phone_number = %s",
-                    (clean_number,)
-                )
-                conn.commit()
-                deletion_status["database"] = True
+        # Intentar borrar base de datos
+        if exists_in_db:
+            deletion_status["database"] = delete_chat_history(clean_number)
+            if deletion_status["database"]:
                 logger.info(f"Base de datos limpiada para el número: {clean_number}")
-        except Exception as db_error:
-            logger.error(f"Error limpiando base de datos: {str(db_error)}")
-        finally:
-            if conn:
-                conn.close()
 
-        # Preparar mensaje detallado
+        # Preparar respuesta
         details = []
         if deletion_status["cache"]:
             details.append("caché")
@@ -118,27 +119,23 @@ async def delete_conversation(phone_number: str):
             details.append("base de datos")
 
         if details:
-            message = f"Conversación eliminada de: {' y '.join(details)}"
-            status = "success"
-        else:
-            message = "No se pudo eliminar la conversación de ningún sistema"
-            status = "error"
-
-        return {
-            "status": status,
-            "message": message,
-            "details": {
-                "cache_deleted": deletion_status["cache"],
-                "database_deleted": deletion_status["database"]
+            return {
+                "status": "success",
+                "message": f"Conversación eliminada de: {' y '.join(details)}",
+                "details": deletion_status
             }
-        }
+        else:
+            return {
+                "status": "error",
+                "message": "No se pudo eliminar la conversación de ningún sistema",
+                "details": deletion_status
+            }
 
     except Exception as e:
-        error_msg = str(e)
-        logger.error(f"Error en proceso de borrado - Número: {clean_number} - Error: {error_msg}")
+        logger.error(f"Error en proceso de borrado - Número: {clean_number} - Error: {str(e)}")
         return {
             "status": "error",
-            "message": f"Error en el proceso: {error_msg}",
+            "message": f"Error en el proceso: {str(e)}",
             "details": {
                 "cache_deleted": False,
                 "database_deleted": False

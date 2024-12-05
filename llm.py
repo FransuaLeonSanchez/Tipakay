@@ -77,20 +77,14 @@ def get_cached_completion(messages_key):
     return response
 
 
-def clear_cache_for_number(phone_number: str):
-    """Limpia el caché para un número específico"""
-    # Limpiar el caché personalizado
-    keys_to_delete = [
-        key for key in cached_responses.keys()
-        if key[0] == phone_number
-    ]
-    for key in keys_to_delete:
-        cached_responses.pop(key, None)
-
-    # Limpiar el caché LRU
-    get_cached_completion.cache_clear()
-
-    logging.info(f"Caché limpiado para el número: {phone_number}")
+def clear_cache_for_number():
+    """Limpia todo el caché de completion"""
+    try:
+        get_cached_completion.cache_clear()
+        return True
+    except Exception as e:
+        logging.error(f"Error limpiando caché: {str(e)}")
+        return False
 
 PRODUCT_TRIGGERS = {
     "echowave": {
