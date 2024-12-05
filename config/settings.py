@@ -36,6 +36,15 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 DEBUG = os.environ.get("DEBUG", "True").lower() in ["true", "yes", "1"]
 
 
+#Huawei OBS Settings
+# Huawei OBS Settings
+HUAWEI_ACCESS_KEY = os.getenv('HUAWEI_ACCESS_KEY')
+HUAWEI_ACCESS_SECRET_KEY = os.getenv('HUAWEI_ACCESS_SECRET_KEY')
+HUAWEI_OBS_ENDPOINT = os.getenv('HUAWEI_OBS_ENDPOINT')
+HUAWEI_BUCKET_NAME = os.getenv('HUAWEI_BUCKET_NAME')
+
+
+
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
 ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1"]
 

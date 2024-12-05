@@ -1,6 +1,6 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from web_project import TemplateLayout, TemplateHelper
+from web_project import TemplateLayout
 from django.http import JsonResponse
 from openai import OpenAI
 from django.conf import settings
@@ -9,13 +9,23 @@ import json
 import logging
 from datetime import datetime
 import re
+import tempfile
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from .huawei_obs import HuaweiOBSUploader
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 def standardize_date(date_str):
-    """Convierte diferentes formatos de fecha a YYYY-MM-DD"""
+    """
+    Convierte diferentes formatos de fecha a YYYY-MM-DD
+    """
     try:
-        # Lista de formatos posibles
         formats = [
             '%Y/%m/%d',
             '%d/%m/%Y',
@@ -25,7 +35,6 @@ def standardize_date(date_str):
             '%d.%m.%Y'
         ]
         
-        # Primero, manejar el caso especial "2024 Nov 14"
         if re.match(r'^\d{4}\s+[A-Za-z]+\s+\d{1,2}$', date_str):
             parts = date_str.split()
             month_map = {
@@ -36,16 +45,13 @@ def standardize_date(date_str):
             month = month_map.get(parts[1][:3].capitalize(), '01')
             return f"{parts[0]}-{month}-{int(parts[2]):02d}"
         
-        # Si ya está en el formato correcto YYYY-MM-DD
         if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
             return date_str
             
-        # Si está en formato DD/MM/YYYY
         if re.match(r'^\d{2}/\d{2}/\d{4}$', date_str):
             day, month, year = date_str.split('/')
             return f"{year}-{month}-{day}"
             
-        # Intentar con los formatos definidos
         for fmt in formats:
             try:
                 dt = datetime.strptime(date_str, fmt)
@@ -59,9 +65,12 @@ def standardize_date(date_str):
         return date_str
 
 def process_image_with_openai(image_file):
+    """
+    Procesa una imagen usando OpenAI Vision
+    """
     try:
         if not settings.OPENAI_API_KEY:
-            raise ValueError("OpenAI API key no configurada. Por favor, verifica tu archivo .env")
+            raise ValueError("OpenAI API key no configurada")
         
         if image_file.size > 20 * 1024 * 1024:
             raise ValueError("La imagen es demasiado grande. Máximo 20MB permitido.")
@@ -115,10 +124,8 @@ def process_image_with_openai(image_file):
         result = completion.choices[0].message.content
         logger.info(f"Respuesta de OpenAI recibida: {result}")
         
-        # Parsear el JSON y estandarizar las fechas
         parsed_result = json.loads(result)
         
-        # Estandarizar las fechas
         for record in parsed_result.get('records', []):
             if 'insertion_date' in record:
                 record['insertion_date'] = standardize_date(record['insertion_date'])
@@ -128,6 +135,73 @@ def process_image_with_openai(image_file):
     except Exception as e:
         logger.error(f"Error en process_image_with_openai: {str(e)}")
         raise
+
+def process_and_save_records(result):
+    """
+    Procesa y guarda los registros OCR en la base de datos PostgreSQL
+    """
+    conn = None
+    cursor = None
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            database=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            cursor_factory=RealDictCursor
+        )
+        cursor = conn.cursor()
+
+        saved_records = []
+        for record in result.get('records', []):
+            query = """
+            INSERT INTO ocr_records (numero, name, category, insertion_date, address)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, numero, name, category, insertion_date, address;
+            """
+            
+            cursor.execute(query, (
+                record['numero'],
+                record['name'],
+                record['category'],
+                record['insertion_date'],
+                record.get('address', '')
+            ))
+            
+            saved_record = cursor.fetchone()
+            saved_records.append(dict(saved_record))
+
+        conn.commit()
+        return saved_records
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"Error guardando registros OCR: {str(e)}")
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def list_bucket_images(request):
+    """
+    Lista todas las imágenes del bucket Huawei OBS
+    """
+    try:
+        uploader = HuaweiOBSUploader()
+        images = uploader.list_images()
+        return JsonResponse({
+            "images": [{
+                'url': img['url'],
+                'name': img['name'],
+                'upload_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            } for img in images]
+        })
+    except Exception as e:
+        logger.error(f"Error listing bucket images: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=500)
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'ocr/dashboard.html'
@@ -149,12 +223,41 @@ class ScanView(LoginRequiredMixin, TemplateView):
                 return JsonResponse({'error': 'No se ha proporcionado ninguna imagen'}, status=400)
             
             image_file = request.FILES['document']
-            result = process_image_with_openai(image_file)
-            return JsonResponse(result)
             
+            # Procesar con OpenAI
+            result = process_image_with_openai(image_file)
+            
+            # Subir imagen a Huawei OBS
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                for chunk in image_file.chunks():
+                    temp_file.write(chunk)
+                temp_file_path = temp_file.name
+
+            try:
+                uploader = HuaweiOBSUploader()
+                public_url = uploader.upload_image(
+                    temp_file_path,
+                    original_filename=image_file.name
+                )
+                
+                if not public_url:
+                    raise ValueError("Error al subir archivo a Huawei OBS")
+
+                # Añadir la URL del documento al resultado
+                result['document_url'] = public_url
+                
+                # Guardar registros en la base de datos
+                saved_records = process_and_save_records(result)
+                result['records'] = saved_records
+                    
+            finally:
+                os.unlink(temp_file_path)
+            
+            return JsonResponse(result)
+                
         except ValueError as e:
             logger.error(f"Error de validación: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
         except Exception as e:
             logger.error(f"Error inesperado: {str(e)}")
-            return JsonResponse({'error': str(e)}, status=400)
+            return JsonResponse({'error': str(e)}, status=500)

@@ -32,31 +32,53 @@
   <div class="authentication-inner row">
     <!-- /Left Text -->
     <div class="d-none d-lg-flex col-lg-7 p-0">
-      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center">
-        {% comment %} <img src="{% static 'img/illustrations/auth-login-illustration-' %}{{ COOKIES.style|default:style }}.png" alt="auth-login-cover" class="img-fluid my-5 auth-illustration" data-app-light-img="illustrations/auth-login-illustration-light.png" data-app-dark-img="illustrations/auth-login-illustration-dark.png">
-
-        <img src="{% static 'img/illustrations/bg-shape-image-' %}{{ COOKIES.style|default:style }}.png" alt="auth-login-cover" class="platform-bg" data-app-light-img="illustrations/bg-shape-image-light.png" data-app-dark-img="illustrations/bg-shape-image-dark.png"> {% endcomment %}
+      <div class="auth-cover-bg auth-cover-bg-color d-flex justify-content-center align-items-center" style="width: 100%; height: 100vh; overflow: hidden;">
+          <img src="{% static 'img/avatars/fondo.png' %}" alt="imagen" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
     </div>
+    {% comment %} <div class="d-none d-lg-flex col-lg-7 p-0" style="position: relative;">
+      <img src="{% static 'img/avatars/fondo.png' %}" alt="imagen" style="position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; object-fit: cover;">
+    </div> {% endcomment %}
     <!-- /Left Text -->
 
     <!-- Login -->
     <div class="d-flex col-12 col-lg-5 align-items-center p-sm-5 p-4">
       <div class="w-px-400 mx-auto">
         <!-- Logo -->
-        <div class="app-brand mb-4">
+        {% comment %} <div class="app-brand mb-4">
           <a href="{% url 'index' %}" class="app-brand-link">
             <span class="app-brand-logo demo">
               {% include 'partials/logo.html' with height=20 bgcolor="fill: #fff;" %}
             </span>
           </a>
+        </div> {% endcomment %}
+
+        <div class="app-brand demo">
+          <img src="{% static 'img/avatars/AIVendo.png' %}" alt="imagen" width="350" height="65">
+      
+          {% comment %} <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+            <i class="ti menu-toggle-icon d-none d-xl-block ti-sm align-middle"></i>
+            <i class="ti ti-x d-block d-xl-none ti-sm align-middle"></i>
+          </a> {% endcomment %}
+        </div>
+
+        <div class="app-brand demo">
+          <span class="app-brand-logo demo">
+           
+          </span>
+      
+          {% comment %} <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto">
+            <i class="ti menu-toggle-icon d-none d-xl-block ti-sm align-middle"></i>
+            <i class="ti ti-x d-block d-xl-none ti-sm align-middle"></i>
+          </a> {% endcomment %}
         </div>
         <!-- /Logo -->
-        <h3 class="mb-1">Welcome to {% get_theme_variables 'template_name' %}! 👋</h3>
+        {% comment %} <h3 class="mb-1">Welcome to {% get_theme_variables 'template_name' %}! 👋</h3> {% endcomment %}
+        <h3 class="mb-1">Welcome 👋</h3>
         <p class="mb-4">Please sign-in to your account and start the adventure</p>
         <div class="alert alert-primary small">
           <p class="text-caption mb-1"> Admin Email: <strong>admin@demo.com</strong> / Username: <strong>admin</strong></p>
-          <p class="text-caption mb-1"> Client Email: <strong>client@demo.com</strong> / Username: <strong>client</strong></p>
+          {% comment %} <p class="text-caption mb-1"> Client Email: <strong>client@demo.com</strong> / Username: <strong>client</strong></p> {% endcomment %}
           <p class="text-caption mb-0">Password: <strong>Pwd_1234</strong></p>
         </div>
         {% if messages %}
@@ -75,9 +97,9 @@
           <div class="mb-3 form-password-toggle">
             <div class="d-flex justify-content-between">
               <label class="form-label" for="password">Password</label>
-              <a href="{% url 'forgot-password' %}">
+              {% comment %} <a href="{% url 'forgot-password' %}">
                 <small>Forgot Password?</small>
-              </a>
+              </a> {% endcomment %}
             </div>
             <div class="input-group input-group-merge">
               <input type="password" id="password" class="form-control" name="password" value="Pwd_1234" placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;" aria-describedby="password" />
@@ -98,12 +120,12 @@
           <button class="btn btn-primary d-grid w-100" type="submit">Sign in</button>
         </form>
 
-        <p class="text-center">
+        {% comment %} <p class="text-center">
           <span>New on our platform?</span>
           <a href="{% url 'register' %}">
             <span>Create an account</span>
           </a>
-        </p>
+        </p> {% endcomment %}
 
       </div>
     </div>

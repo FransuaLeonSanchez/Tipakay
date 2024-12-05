@@ -1,9 +1,10 @@
 from django.urls import path
-from .views import InvoiceView, InvoicePrintView
+from .views import OCRRecordListView, InvoiceView, InvoicePrintView
 from django.contrib.auth.decorators import login_required
 
-
 urlpatterns = [
+
+    path('api/ocr-records/', login_required(OCRRecordListView.as_view()), name='ocr-records-api'),
     path(
         "app/invoice/list/",
         login_required(InvoiceView.as_view(template_name="app_invoice_list.html")),

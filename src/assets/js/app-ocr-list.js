@@ -1,4 +1,6 @@
+// static/js/app-ocr-list.js
 
+'use strict';
 
 $(function() {
   // Función para actualizar los widgets de estadísticas

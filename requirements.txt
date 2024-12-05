@@ -5,6 +5,7 @@ certifi==2024.8.30
 colorama==0.4.6
 distro==1.9.0
 Django==4.2.5
+esdk-obs-python==3.24.6.1
 gunicorn==21.2.0
 h11==0.14.0
 httpcore==1.0.7
@@ -14,6 +15,7 @@ jiter==0.8.0
 openai==1.55.3
 packaging==23.1
 psycopg2==2.9.10
+pycryptodome==3.21.0
 pydantic==2.10.2
 pydantic_core==2.27.1
 python-dotenv==1.0.0

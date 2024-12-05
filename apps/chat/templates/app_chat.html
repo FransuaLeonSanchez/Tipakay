@@ -24,251 +24,258 @@
 {{ block.super }}
 <script>
   console.log("Script de chat cargado")
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('Chat iniciado...');
-
-  let conversationsCache = {};
-  let currentChatId = null;
-
-  // Referencias DOM
-  const chatContactsBody = document.querySelector('.app-chat-contacts .sidebar-body');
-  const chatHistoryBody = document.querySelector('.chat-history-body');
-  const searchInput = document.querySelector('.chat-search-input');
-  const messageInput = document.querySelector('.message-input');
-  const formSendMessage = document.querySelector('.form-send-message');
-  const chatHeaderName = document.querySelector('#chat-header-name');
-  const chatHeaderStatus = document.querySelector('#chat-header-status');
-
-  // Inicializar scrollbars
-  let chatContactsPS, chatHistoryPS;
-
-  if (chatContactsBody) {
-    chatContactsPS = new PerfectScrollbar(chatContactsBody, {
-      wheelPropagation: false,
-      suppressScrollX: true
-    });
-  }
-
-  if (chatHistoryBody) {
-    chatHistoryPS = new PerfectScrollbar(chatHistoryBody, {
-      wheelPropagation: false,
-      suppressScrollX: true
-    });
-  }
-
-  function scrollToBottom() {
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Chat iniciado...');
+  
+    let conversationsCache = {};
+    let currentChatId = null;
+  
+    const chatContactsBody = document.querySelector('.app-chat-contacts .sidebar-body');
+    const chatHistoryBody = document.querySelector('.chat-history-body');
+    const searchInput = document.querySelector('.chat-search-input');
+    const messageInput = document.querySelector('.message-input');
+    const formSendMessage = document.querySelector('.form-send-message');
+    const chatHeaderName = document.querySelector('#chat-header-name');
+    const chatHeaderStatus = document.querySelector('#chat-header-status');
+  
+    let chatContactsPS, chatHistoryPS;
+  
+    if (chatContactsBody) {
+      chatContactsPS = new PerfectScrollbar(chatContactsBody, {
+        wheelPropagation: false,
+        suppressScrollX: true
+      });
+    }
+  
     if (chatHistoryBody) {
-      chatHistoryBody.scrollTop = chatHistoryBody.scrollHeight;
-      if (chatHistoryPS) {
-        chatHistoryPS.update();
+      chatHistoryPS = new PerfectScrollbar(chatHistoryBody, {
+        wheelPropagation: false,
+        suppressScrollX: true
+      });
+    }
+  
+    function scrollToBottom() {
+      if (chatHistoryBody) {
+        chatHistoryBody.scrollTop = chatHistoryBody.scrollHeight;
+        if (chatHistoryPS) {
+          chatHistoryPS.update();
+        }
       }
     }
-  }
-
-  function formatMessage(content) {
-    // Remove <> tags and split by items
-    let cleanContent = content.replace(/<([^>]+)>/g, '$1');
-    
-    // Split the content into initial part and product list
-    let parts = cleanContent.split('Aquí tienes una lista de nuestros productos:');
-    
-    if (parts.length > 1) {
-      // Format the product list with line breaks
-      let formattedContent = parts[0] + 'Aquí tienes una lista de nuestros productos:\n' + 
-        parts[1].split('¿Cuántas unidades')[0].split(/[🎧✅🎵🔊📱💰✨]/).join('\n').replace(/\n+/g, '\n') +
-        '\n¿Cuántas unidades' + parts[1].split('¿Cuántas unidades')[1];
+  
+    function formatMessage(content) {
+      let cleanContent = content.replace(/<([^>]+)>/g, '$1');
       
-      // Convert line breaks to <br> tags for HTML display
-      return formattedContent.split('\n').map(line => line.trim()).filter(line => line).join('<br>');
+      const imageMapping = {
+        'https://tipakay.obs.la-north-2.myhuaweicloud.com/echowave_ews.jpg': '/static/img/products/echowave_ews.jpg',
+        'https://tipakay.obs.la-north-2.myhuaweicloud.com/airbeat_pro_abp.jpg': '/static/img/products/airbeat_pro_abp.jpg',
+        'https://tipakay.obs.la-north-2.myhuaweicloud.com/glidefit_fgs.jpg': '/static/img/products/glidefit_fgs.jpg',
+        'https://tipakay.obs.la-north-2.myhuaweicloud.com/snapshot_sdm.jpg': '/static/img/products/snapshot_sdm.jpg',
+        'https://tipakay.obs.la-north-2.myhuaweicloud.com/prostream_pwm.jpg': '/static/img/products/prostream_pwm.jpg'
+      };
+  
+      Object.keys(imageMapping).forEach(url => {
+        if (cleanContent.includes(url)) {
+          const imgTag = `<div class="chat-image-container"><img src="${imageMapping[url]}" alt="Product Image" class="chat-image rounded" style="max-width: 200px; height: auto;"/></div>`;
+          cleanContent = cleanContent.replace(url, imgTag);
+        }
+      });
+      
+      let parts = cleanContent.split('Aquí tienes una lista de nuestros productos:');
+      
+      if (parts.length > 1) {
+        let formattedContent = parts[0] + 'Aquí tienes una lista de nuestros productos:\n' + 
+          parts[1].split('¿Cuántas unidades')[0].split(/[🎧✅🎵🔊📱💰✨]/).join('\n').replace(/\n+/g, '\n') +
+          '\n¿Cuántas unidades' + parts[1].split('¿Cuántas unidades')[1];
+        
+        return formattedContent.split('\n').map(line => line.trim()).filter(line => line).join('<br>');
+      }
+      
+      return cleanContent;
     }
-    
-    return cleanContent;
-  }
-
-  async function loadConversations() {
-    try {
-      const response = await fetch('/api/conversations/');
-      const data = await response.json();
-      
-      const chatList = document.getElementById('chat-list');
-      if (!chatList) return;
-
-      chatList.innerHTML = '';
-
-      if (data.conversations?.length > 0) {
-        data.conversations.forEach(conv => {
-          conversationsCache[conv.id_chat] = conv;
-        });
-
-        data.conversations.forEach(conv => {
-          try {
-            const messages = JSON.parse(conv.chat_history);
-            const filteredMessages = messages.filter(msg => msg.role !== 'system');
-            const lastMessage = filteredMessages.length > 0 
-              ? filteredMessages[filteredMessages.length - 1]?.content.replace(/<([^>]+)>/g, '$1')
-              : 'No hay mensajes';
-
-            const li = document.createElement('li');
-            li.className = 'chat-contact-list-item';
-            if (currentChatId === conv.id_chat) li.classList.add('active');
-            
-            li.innerHTML = `
-              <a class="d-flex align-items-center">
-                <div class="flex-shrink-0 avatar avatar-online">
-                  <span class="avatar-initial rounded-circle bg-label-primary">${conv.phone_number.toString().slice(0,2)}</span>
-                </div>
-                <div class="chat-contact-info flex-grow-1 ms-2">
-                  <h6 class="chat-contact-name text-truncate m-0">+${conv.phone_number}</h6>
-                  <p class="chat-contact-status text-muted text-truncate mb-0">${lastMessage}</p>
-                </div>
-                <small class="text-muted mb-0">Activo</small>
-              </a>
-            `;
-
-            li.addEventListener('click', () => {
-              document.querySelectorAll('.chat-contact-list-item').forEach(item => {
-                item.classList.remove('active');
+  
+    async function loadConversations() {
+      try {
+        const response = await fetch('/api/conversations/');
+        const data = await response.json();
+        
+        const chatList = document.getElementById('chat-list');
+        if (!chatList) return;
+  
+        chatList.innerHTML = '';
+  
+        if (data.conversations?.length > 0) {
+          data.conversations.forEach(conv => {
+            conversationsCache[conv.id_chat] = conv;
+          });
+  
+          data.conversations.forEach(conv => {
+            try {
+              const messages = JSON.parse(conv.chat_history);
+              const filteredMessages = messages.filter(msg => msg.role !== 'system');
+              const lastMessage = filteredMessages.length > 0 
+                ? filteredMessages[filteredMessages.length - 1]?.content.replace(/<([^>]+)>/g, '$1')
+                : 'No hay mensajes';
+  
+              const li = document.createElement('li');
+              li.className = 'chat-contact-list-item';
+              if (currentChatId === conv.id_chat) li.classList.add('active');
+              
+              li.innerHTML = `
+                <a class="d-flex align-items-center">
+                  <div class="flex-shrink-0 avatar avatar-online">
+                    <span class="avatar-initial rounded-circle bg-label-primary">${conv.phone_number.toString().slice(0,2)}</span>
+                  </div>
+                  <div class="chat-contact-info flex-grow-1 ms-2">
+                    <h6 class="chat-contact-name text-truncate m-0">+${conv.phone_number}</h6>
+                    <p class="chat-contact-status text-muted text-truncate mb-0">${lastMessage}</p>
+                  </div>
+                  <small class="text-muted mb-0">Activo</small>
+                </a>
+              `;
+  
+              li.addEventListener('click', () => {
+                document.querySelectorAll('.chat-contact-list-item').forEach(item => {
+                  item.classList.remove('active');
+                });
+                li.classList.add('active');
+                
+                if (chatHeaderName) {
+                  chatHeaderName.textContent = `+${conv.phone_number}`;
+                }
+                if (chatHeaderStatus) {
+                  chatHeaderStatus.textContent = 'Activo';
+                }
+                
+                showChat(conv);
+                currentChatId = conv.id_chat;
               });
-              li.classList.add('active');
-              
-              if (chatHeaderName) {
-                chatHeaderName.textContent = `+${conv.phone_number}`;
+  
+              chatList.appendChild(li);
+            } catch (error) {
+              console.error('Error procesando conversación:', error);
+            }
+          });
+  
+          if (chatContactsPS) {
+            chatContactsPS.update();
+          }
+        } else {
+          chatList.innerHTML = `
+            <li class="chat-contact-list-item">
+              <h6 class="text-muted mb-0">No hay conversaciones</h6>
+            </li>`;
+        }
+      } catch (error) {
+        console.error('Error cargando conversaciones:', error);
+      }
+    }
+  
+    function showChat(conversation) {
+      const chatHistory = document.querySelector('.chat-history');
+      if (!chatHistory) return;
+  
+      try {
+        const messages = JSON.parse(conversation.chat_history);
+        chatHistory.innerHTML = '';
+  
+        const filteredMessages = messages.filter(msg => 
+          msg.role !== 'system' && 
+          msg.content?.trim()
+        );
+  
+        filteredMessages.forEach(msg => {
+          const li = document.createElement('li');
+          li.className = `chat-message ${msg.role === 'user' ? 'chat-message-right' : ''}`;
+          
+          const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
+          const formattedContent = formatMessage(msg.content);
+          
+          li.innerHTML = `
+            <div class="d-flex overflow-hidden">
+              ${msg.role === 'user' ? 
+                `<div class="chat-message-wrapper flex-grow-1">
+                  <div class="chat-message-text">
+                    <p class="mb-0">${formattedContent}</p>
+                  </div>
+                  <div class="text-end text-muted mt-1">
+                    <i class='ti ti-checks ti-xs me-1 text-success'></i>
+                    <small>${timestamp || 'Enviado'}</small>
+                  </div>
+                </div>
+                <div class="user-avatar flex-shrink-0 ms-3">
+                  <div class="avatar avatar-sm">
+                    <span class="avatar-initial rounded-circle bg-label-primary">U</span>
+                  </div>
+                </div>` : 
+                `<div class="user-avatar flex-shrink-0 me-3">
+                  <div class="avatar avatar-sm">
+                    <span class="avatar-initial rounded-circle bg-label-success">A</span>
+                  </div>
+                </div>
+                <div class="chat-message-wrapper flex-grow-1">
+                  <div class="chat-message-text">
+                    <p class="mb-0">${formattedContent}</p>
+                  </div>
+                  <div class="text-muted mt-1">
+                    <small>${timestamp || 'Recibido'}</small>
+                  </div>
+                </div>`
               }
-              if (chatHeaderStatus) {
-                chatHeaderStatus.textContent = 'Activo';
-              }
-              
-              showChat(conv);
-              currentChatId = conv.id_chat;
-            });
-
-            chatList.appendChild(li);
-          } catch (error) {
-            console.error('Error procesando conversación:', error);
+            </div>
+          `;
+          
+          chatHistory.appendChild(li);
+        });
+  
+        setTimeout(scrollToBottom, 100);
+  
+      } catch (error) {
+        console.error('Error mostrando mensajes:', error);
+        chatHistory.innerHTML = '<li>Error al cargar los mensajes</li>';
+      }
+    }
+  
+    if (searchInput) {
+      let searchTimeout;
+      searchInput.addEventListener('input', e => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+          const searchTerm = e.target.value.toLowerCase();
+          document.querySelectorAll('.chat-contact-list-item').forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
+          });
+          if (chatContactsPS) {
+            chatContactsPS.update();
+          }
+        }, 300);
+      });
+    }
+  
+    if (formSendMessage) {
+      formSendMessage.addEventListener('submit', e => {
+        e.preventDefault();
+        if (messageInput?.value.trim()) {
+          console.log('Mensaje a enviar:', messageInput.value);
+          messageInput.value = '';
+        }
+      });
+    }
+  
+    loadConversations();
+  
+    setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        const previousChat = currentChatId;
+        loadConversations().then(() => {
+          if (previousChat && conversationsCache[previousChat]) {
+            showChat(conversationsCache[previousChat]);
           }
         });
-
-        if (chatContactsPS) {
-          chatContactsPS.update();
-        }
-      } else {
-        chatList.innerHTML = `
-          <li class="chat-contact-list-item">
-            <h6 class="text-muted mb-0">No hay conversaciones</h6>
-          </li>`;
       }
-    } catch (error) {
-      console.error('Error cargando conversaciones:', error);
-    }
-  }
-
-  function showChat(conversation) {
-    const chatHistory = document.querySelector('.chat-history');
-    if (!chatHistory) return;
-
-    try {
-      const messages = JSON.parse(conversation.chat_history);
-      chatHistory.innerHTML = '';
-
-      const filteredMessages = messages.filter(msg => 
-        msg.role !== 'system' && 
-        msg.content?.trim()
-      );
-
-      filteredMessages.forEach(msg => {
-        const li = document.createElement('li');
-        li.className = `chat-message ${msg.role === 'user' ? 'chat-message-right' : ''}`;
-        
-        const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-        const formattedContent = formatMessage(msg.content);
-        
-        li.innerHTML = `
-          <div class="d-flex overflow-hidden">
-            ${msg.role === 'user' ? 
-              `<div class="chat-message-wrapper flex-grow-1">
-                <div class="chat-message-text">
-                  <p class="mb-0">${formattedContent}</p>
-                </div>
-                <div class="text-end text-muted mt-1">
-                  <i class='ti ti-checks ti-xs me-1 text-success'></i>
-                  <small>${timestamp || 'Enviado'}</small>
-                </div>
-              </div>
-              <div class="user-avatar flex-shrink-0 ms-3">
-                <div class="avatar avatar-sm">
-                  <span class="avatar-initial rounded-circle bg-label-primary">U</span>
-                </div>
-              </div>` : 
-              `<div class="user-avatar flex-shrink-0 me-3">
-                <div class="avatar avatar-sm">
-                  <span class="avatar-initial rounded-circle bg-label-success">A</span>
-                </div>
-              </div>
-              <div class="chat-message-wrapper flex-grow-1">
-                <div class="chat-message-text">
-                  <p class="mb-0">${formattedContent}</p>
-                </div>
-                <div class="text-muted mt-1">
-                  <small>${timestamp || 'Recibido'}</small>
-                </div>
-              </div>`
-            }
-          </div>
-        `;
-        
-        chatHistory.appendChild(li);
-      });
-
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
-
-    } catch (error) {
-      console.error('Error mostrando mensajes:', error);
-      chatHistory.innerHTML = '<li>Error al cargar los mensajes</li>';
-    }
-  }
-
-  if (searchInput) {
-    let searchTimeout;
-    searchInput.addEventListener('input', e => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        const searchTerm = e.target.value.toLowerCase();
-        document.querySelectorAll('.chat-contact-list-item').forEach(item => {
-          const text = item.textContent.toLowerCase();
-          item.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
-        if (chatContactsPS) {
-          chatContactsPS.update();
-        }
-      }, 300);
-    });
-  }
-
-  if (formSendMessage) {
-    formSendMessage.addEventListener('submit', e => {
-      e.preventDefault();
-      if (messageInput?.value.trim()) {
-        console.log('Mensaje a enviar:', messageInput.value);
-        messageInput.value = '';
-      }
-    });
-  }
-
-  loadConversations();
-
-  setInterval(() => {
-    if (document.visibilityState === 'visible') {
-      const previousChat = currentChatId;
-      loadConversations().then(() => {
-        if (previousChat && conversationsCache[previousChat]) {
-          showChat(conversationsCache[previousChat]);
-        }
-      });
-    }
-  }, 30000);
-});
+    }, 30000);
+  });
 
 </script>
 {% endblock page_js %}
@@ -305,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </li>
         </ul>
         <!-- Contacts -->
-        <ul class="list-unstyled chat-contact-list mb-0" id="contact-list">
+        {% comment %} <ul class="list-unstyled chat-contact-list mb-0" id="contact-list">
           <li class="chat-contact-list-item chat-contact-list-item-title">
             <h5 class="text-primary mb-0">Contacts</h5>
           </li>
@@ -367,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </a>
           </li>
-        </ul>
+        </ul> {% endcomment %}
       </div>
     </div>
     <!-- /Chat contacts -->

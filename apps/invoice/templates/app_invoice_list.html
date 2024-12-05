@@ -3,7 +3,7 @@
 {% load static %}
 {% load i18n %}
 
-{% block title %}Invoice List - Pages{% endblock %}
+{% block title %}OCR Records - List{% endblock %}
 
 {% block vendor_css %}
 {{ block.super }}
@@ -20,90 +20,206 @@
 
 {% block page_js %}
 {{ block.super }}
-<script src="{% static 'js/app-invoice-list.js' %}"></script>
+<script>
+$(function() {
+    var dt_invoice_table = $('.invoice-list-table');
+    
+    if (dt_invoice_table.length) {
+        var dt = dt_invoice_table.DataTable({
+            ajax: {
+                url: '/api/ocr-records/',
+                dataSrc: 'data'
+            },
+            columns: [
+                { 
+                    data: null,
+                    defaultContent: '',
+                    orderable: false
+                },
+                { 
+                    data: 'numero',
+                    render: function(data) {
+                        return `<span class="fw-semibold">${data}</span>`;
+                    }
+                },
+                {
+                    data: null,
+                    defaultContent: '<i class="ti ti-trending-up text-success me-3"></i>'
+                },
+                { 
+                    data: 'name',
+                    render: function(data) {
+                        return `<span class="fw-semibold">${data}</span>`;
+                    }
+                },
+                { 
+                    data: 'insertion_date',
+                    render: function(data) {
+                        return moment(data).format('DD MMM YYYY');
+                    }
+                },
+                { 
+                    data: 'address',
+                    render: function(data) {
+                        return data || '<span class="text-muted">No address</span>';
+                    }
+                },
+                {
+                    data: 'category',
+                    render: function(data) {
+                        const badges = {
+                            'Documento': 'bg-label-primary',
+                            'Smarthome': 'bg-label-success',
+                            'Accessories': 'bg-label-info',
+                            'Wearables': 'bg-label-warning',
+                            'Drones': 'bg-label-danger'
+                        };
+                        const badgeClass = badges[data] || 'bg-label-secondary';
+                        return `<span class="badge ${badgeClass}">${data}</span>`;
+                    }
+                }
+            ],
+            order: [[1, 'desc']],
+            dom: '<"row mx-2"<"col-md-2"<"me-3"l>><"col-md-10"<"dt-action-buttons text-xl-end text-lg-start text-md-end text-start d-flex align-items-center justify-content-end flex-md-row flex-column mb-3 mb-md-0"fB>>>t<"row mx-2"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            buttons: [
+                {
+                    extend: 'collection',
+                    className: 'btn btn-label-primary dropdown-toggle me-2',
+                    text: '<i class="ti ti-file-export me-sm-1"></i> Export',
+                    buttons: [
+                        {
+                            extend: 'print',
+                            text: '<i class="ti ti-printer me-1"></i>Print',
+                            className: 'dropdown-item'
+                        },
+                        {
+                            extend: 'csv',
+                            text: '<i class="ti ti-file-text me-1"></i>Csv',
+                            className: 'dropdown-item'
+                        },
+                        {
+                            extend: 'excel',
+                            text: '<i class="ti ti-file-spreadsheet me-1"></i>Excel',
+                            className: 'dropdown-item'
+                        },
+                        {
+                            extend: 'pdf',
+                            text: '<i class="ti ti-file-description me-1"></i>Pdf',
+                            className: 'dropdown-item'
+                        }
+                    ]
+                }
+            ],
+            responsive: true
+        });
+    }
+
+    // Actualizar los widgets de resumen
+    $.get('/api/ocr-records/', function(response) {
+        if (response && response.data) {
+            const uniqueClients = [...new Set(response.data.map(item => item.name))].length;
+            const totalRecords = response.data.length;
+            const categories = [...new Set(response.data.map(item => item.category))].length;
+            const today = moment().format('YYYY-MM-DD');
+            const todayRecords = response.data.filter(item => 
+                moment(item.insertion_date).format('YYYY-MM-DD') === today
+            ).length;
+
+            $('#totalClients').text(uniqueClients);
+            $('#totalRecords').text(totalRecords);
+            $('#categories').text(categories);
+            $('#todayRecords').text(todayRecords);
+        }
+    });
+});
+</script>
 {% endblock page_js %}
 
 {% block content %}
-{% comment %} <h4 class="py-3 mb-4">
-  <span class="text-muted fw-light">{% translate "Invoice" %} /</span> {% translate "List" %}
-</h4> {% endcomment %}
+<div class="container-xxl flex-grow-1 container-p-y">
+    <h4 class="py-3 mb-4">
+        <span class="text-muted fw-light">OCR /</span> Records List
+    </h4>
 
-<!-- Invoice List Widget -->
-
-<div class="card mb-4">
-  <div class="card-widget-separator-wrapper">
-    <div class="card-body card-widget-separator">
-      <div class="row gy-4 gy-sm-1">
-        <div class="col-sm-6 col-lg-3">
-          <div class="d-flex justify-content-between align-items-start card-widget-1 border-end pb-3 pb-sm-0">
-            <div>
-              <h3 class="mb-1">24</h3>
-              <p class="mb-0">Clients</p>
+    <!-- Summary Cards -->
+    <div class="card mb-4">
+        <div class="card-widget-separator-wrapper">
+            <div class="card-body card-widget-separator">
+                <div class="row gy-4 gy-sm-1">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex justify-content-between align-items-start card-widget-1 border-end pb-3 pb-sm-0">
+                            <div>
+                                <h3 class="mb-1" id="totalClients">0</h3>
+                                <p class="mb-0">Clients</p>
+                            </div>
+                            <span class="avatar me-sm-4">
+                                <span class="avatar-initial bg-label-primary rounded">
+                                    <i class="ti ti-user ti-md"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex justify-content-between align-items-start card-widget-2 border-end pb-3 pb-sm-0">
+                            <div>
+                                <h3 class="mb-1" id="totalRecords">0</h3>
+                                <p class="mb-0">Records</p>
+                            </div>
+                            <span class="avatar me-lg-4">
+                                <span class="avatar-initial bg-label-info rounded">
+                                    <i class="ti ti-file-text ti-md"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex justify-content-between align-items-start border-end pb-3 pb-sm-0 card-widget-3">
+                            <div>
+                                <h3 class="mb-1" id="todayRecords">0</h3>
+                                <p class="mb-0">Today's Records</p>
+                            </div>
+                            <span class="avatar me-sm-4">
+                                <span class="avatar-initial bg-label-success rounded">
+                                    <i class="ti ti-calendar ti-md"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h3 class="mb-1" id="categories">0</h3>
+                                <p class="mb-0">Categories</p>
+                            </div>
+                            <span class="avatar">
+                                <span class="avatar-initial bg-label-warning rounded">
+                                    <i class="ti ti-tag ti-md"></i>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <span class="avatar me-sm-4">
-              <span class="avatar-initial bg-label-secondary rounded"><i class="ti ti-user ti-md"></i></span>
-            </span>
-          </div>
-          <hr class="d-none d-sm-block d-lg-none me-4">
         </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="d-flex justify-content-between align-items-start card-widget-2 border-end pb-3 pb-sm-0">
-            <div>
-              <h3 class="mb-1">165</h3>
-              <p class="mb-0">Invoices</p>
-            </div>
-            <span class="avatar me-lg-4">
-              <span class="avatar-initial bg-label-secondary rounded"><i class="ti ti-file-invoice ti-md"></i></span>
-            </span>
-          </div>
-          <hr class="d-none d-sm-block d-lg-none">
-        </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="d-flex justify-content-between align-items-start border-end pb-3 pb-sm-0 card-widget-3">
-            <div>
-              <h3 class="mb-1">$2.46k</h3>
-              <p class="mb-0">Paid</p>
-            </div>
-            <span class="avatar me-sm-4">
-              <span class="avatar-initial bg-label-secondary rounded"><i class="ti ti-checks ti-md"></i></span>
-            </span>
-          </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h3 class="mb-1">$876</h3>
-              <p class="mb-0">Unpaid</p>
-            </div>
-            <span class="avatar">
-              <span class="avatar-initial bg-label-secondary rounded"><i class="ti ti-circle-off ti-md"></i></span>
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-</div>
 
-<!-- Invoice List Table -->
-<div class="card">
-  <div class="card-datatable table-responsive">
-    <table class="invoice-list-table table border-top">
-      <thead>
-        <tr>
-          <th></th>
-          <th>#ID</th>
-          <th><i class='ti ti-trending-up text-secondary'></i></th>
-          <th>Client</th>
-          <th>Total</th>
-          <th class="text-truncate">Issued Date</th>
-          <th>Balance</th>
-          <th>Invoice Status</th>
-          <th class="cell-fit">Actions</th>
-        </tr>
-      </thead>
-    </table>
-  </div>
+    <!-- OCR Records DataTable -->
+    <div class="card">
+        <div class="card-datatable table-responsive">
+            <table class="invoice-list-table table border-top">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>#ID</th>
+                        <th><i class="ti ti-trending-up"></i></th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Address</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </div>
 </div>
-
 {% endblock %}

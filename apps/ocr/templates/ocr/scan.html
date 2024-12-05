@@ -4,71 +4,446 @@
 
 {% block title %}OCR Scanner - AIVendo{% endblock %}
 
+{% block extra_css %}
+<style>
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #696cff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .scan-container {
+        background: #fff;
+        border: 2px dashed #e1e5ea;
+        border-radius: 16px;
+        padding: 3.5rem 2rem;
+        text-align: center;
+        margin: 2rem auto;
+        max-width: 800px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .scan-container:hover {
+        border-color: #696cff;
+        background: #f8f9ff;
+    }
+
+    .scan-icon {
+        width: 64px;
+        height: 64px;
+        color: #696cff;
+        margin-bottom: 1.5rem;
+    }
+
+    .scan-title {
+        font-size: 2rem;
+        color: #566a7f;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+
+    .scan-subtitle {
+        font-size: 1.1rem;
+        color: #999;
+        margin-bottom: 2rem;
+    }
+
+    .custom-file-upload {
+        max-width: 400px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .file-upload-box {
+        border: none;
+        background: #f0f2f5;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .file-upload-box:hover {
+        background: #e8eaf0;
+    }
+
+    .scan-button {
+        background: #696cff;
+        color: white;
+        padding: 1rem 2.5rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 1.1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+    }
+
+    .scan-button:hover {
+        background: #5f66e6;
+        box-shadow: 0 4px 12px rgba(105, 108, 255, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .or-separator {
+        color: #999;
+        margin: 1rem 0;
+        position: relative;
+    }
+
+    .or-separator::before,
+    .or-separator::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 100px;
+        height: 1px;
+        background: #e1e5ea;
+    }
+
+    .or-separator::before {
+        right: calc(50% + 2rem);
+    }
+
+    .or-separator::after {
+        left: calc(50% + 2rem);
+    }
+
+    .custom-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      overflow-y: auto;
+  }
+
+    .custom-modal[style*="display: flex"] {
+        display: flex !important;
+    }
+
+    .custom-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.75);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+  }
+  .custom-modal-container {
+    position: relative;
+    width: 90%;
+    max-width: 800px;  /* Reduced from 1200px for better presentation */
+    margin: auto;
+    background-color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .custom-modal-content {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    padding: 1rem;
+  }
+
+  .custom-modal-img {
+    max-width: 100%;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+  }
+  .custom-modal-close {
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.75);
+    border: 2px solid white;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 1060;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+  .custom-modal-close:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+  }
+    .upload-area {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .upload-area:hover {
+        border-color: #696cff !important;
+        background: #f8f9ff !important;
+    }
+    
+    .btn-primary {
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(105, 108, 255, 0.2);
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-outline-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(105, 108, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-xxl flex-grow-1 container-p-y">
-  <h4 class="fw-bold py-3 mb-4">
-    <span class="text-muted fw-light">OCR /</span> Scanner
-  </h4>
+    <div class="row justify-content-center">
+        <!-- OCR Scanner Card -->
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-none">
+                <div class="card-body text-center p-5">
+                    <div class="upload-container">
+                        <div class="mb-4">
+                            <i class="ti ti-cloud-upload" style="font-size: 64px; color: #696cff;"></i>
+                        </div>
+                        <h2 class="mb-2" style="font-size: 2.5rem; color: #566a7f; font-weight: 500;">OCR Scanner</h2>
+                        <p class="text-muted mb-4" style="font-size: 1.1rem;">Upload your document to begin</p>
+                        
+                        <form id="scanForm" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="upload-area p-5 mb-4" 
+                                 style="border: 2px dashed #e0e0e0; border-radius: 12px; background: #f8f9fa;"
+                                 onclick="handleAreaClick(event)">
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="document" 
+                                       name="document" 
+                                       accept="image/*" 
+                                       onchange="previewImage(this);"
+                                       style="display: none;">
+                                <div class="text-center">
+                                    <p class="text-muted mb-3" style="font-size: 1.1rem;">Drag and drop your files here</p>
+                                    <p class="text-muted mb-3">o</p>
+                                    <button type="button" 
+                                            class="btn btn-outline-primary btn-lg px-4"
+                                            onclick="handleButtonClick(event)">
+                                          Select file
+                                    </button>
+                                </div>
+                            </div>
 
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title">OCR Scanner</h5>
-        </div>
-        <div class="card-body">
-          <form id="scanForm" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label for="document" class="form-label">Seleccionar documento</label>
-              <input type="file" class="form-control" id="document" name="document" accept="image/*" onchange="previewImage(this);">
-            </div>
-            <div class="mb-3">
-              <div id="imagePreviewContainer" style="display: none;" class="position-relative">
-                <img id="imagePreview" src="#" alt="Vista previa" class="img-fluid rounded" style="max-height: 300px;">
-                <button type="button" 
-                        class="btn btn-icon btn-outline-danger waves-effect position-absolute top-0 end-0 m-2"
-                        onclick="removeImage()">
-                  <i class="ti ti-trash"></i>
-                </button>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-primary waves-effect waves-light">
-              <i class="ti ti-scan"></i>
-              <span class="ms-1">Escanear</span>
-            </button>
-          </form>
+                            <div id="imagePreviewContainer" style="display: none;" class="position-relative mb-4">
+                                <img id="imagePreview" src="#" alt="Vista previa" 
+                                     class="img-fluid rounded shadow-sm" 
+                                     style="max-height: 300px;">
+                                <button type="button" 
+                                        class="btn btn-icon btn-outline-danger waves-effect position-absolute top-0 end-0 m-2"
+                                        onclick="removeImage()">
+                                    <i class="ti ti-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="ti ti-scan me-2"></i>
+                                <span>Scan document</span>
+                            </button>
+                        </form>
+                    </div>
 
-          <!-- Contenedor de resultados -->
-          <div id="resultContainer" class="mt-4" style="display: none;">
-            <div class="card">
-              <h5 class="card-header">Resultado del Escaneo</h5>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-bordered">
-                    <thead>
-                      <tr>
-                        <th>N°</th>
-                        <th>Nombre</th>
-                        <th>Categoría</th>
-                        <th>Fecha</th>
-                        <th>Dirección</th>
-                      </tr>
-                    </thead>
-                    <tbody id="resultTableBody">
-                    </tbody>
-                  </table>
+                    <!-- Contenedor de resultados -->
+                    <div id="resultContainer" class="mt-5" style="display: none;">
+                        <div class="card shadow-sm">
+                            <h5 class="card-header">Scan Results</h5>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                              <th>No.</th>
+                                              <th>Name</th>
+                                              <th>Category</th>
+                                              <th>Date</th>
+                                              <th>Address</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="resultTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
+
+        <!-- Documentos Subidos Card -->
+        <div class="col-12 mt-4">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Uploaded Documents</h5>
+                    <button class="btn btn-primary btn-sm waves-effect waves-light" >
+                        
+                        <span class="ms-1">Click the eye icon to view the uploaded image and press "Esc" to exit</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <div class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                        </div>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Document Name</th>
+                                    <th>Date and Time</th>
+                                    <th class="text-center">View</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bucketImagesTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
+<!-- Modal mejorado -->
+<div id="imageModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-backdrop">
+        <div class="custom-modal-container">
+            <button type="button" class="custom-modal-close" onclick="closeModal()">&times;</button>
+            <div class="custom-modal-content">
+                <img id="modalImage" src="" alt="Documento" class="custom-modal-img" style="display: none; opacity: 0;">
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
 <script>
+let currentImages = [];
+
+function handleAreaClick(event) {
+    if (event.target.classList.contains('upload-area')) {
+        document.getElementById('document').click();
+    }
+}
+
+function handleButtonClick(event) {
+    event.stopPropagation();
+    document.getElementById('document').click();
+}
+
+function refreshBucketImages() {
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    loadingOverlay.style.display = 'flex';
+
+    fetch('{% url "list-bucket-images" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            currentImages = data.images;
+            renderImagesTable();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const tableBody = document.getElementById('bucketImagesTable');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-danger">
+                        Error al cargar imágenes: ${error.message}
+                    </td>
+                </tr>
+            `;
+        })
+        .finally(() => {
+            loadingOverlay.style.display = 'none';
+        });
+}
+
+function renderImagesTable() {
+    const tableBody = document.getElementById('bucketImagesTable');
+    tableBody.innerHTML = '';
+    
+    if (currentImages.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center">
+                    No hay imágenes disponibles
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    currentImages.forEach((image, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${image.name}</td>
+            <td>${image.upload_date}</td>
+            <td class="text-center">
+                <button class="btn btn-icon btn-sm btn-primary waves-effect view-btn" 
+                        onclick="openModal('${image.url}')"
+                        title="Ver imagen">
+                    <i class="ti ti-eye"></i>
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
 function previewImage(input) {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const preview = document.getElementById('imagePreview');
@@ -91,12 +466,56 @@ function removeImage() {
     const previewContainer = document.getElementById('imagePreviewContainer');
     const preview = document.getElementById('imagePreview');
     const fileInput = document.getElementById('document');
-    
     preview.src = '#';
     previewContainer.style.display = 'none';
     fileInput.value = '';
 }
 
+function openModal(imageUrl) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    
+    modalImg.onload = function() {
+        modal.style.display = 'flex';
+        modalImg.style.display = 'block';
+        modalImg.style.opacity = '1';
+        
+    };
+    
+    modalImg.src = imageUrl;
+}
+
+function closeModal() {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    
+    modal.style.display = 'none';
+    modalImg.style.display = 'none';
+    modalImg.style.opacity = '0';
+    modalImg.src = '';
+    document.body.style.overflow = '';
+}
+
+// Event Listeners para el modal
+document.querySelector('.custom-modal-backdrop').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Inicialización al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    closeModal();
+    refreshBucketImages();
+});
+
+// Manejo del formulario de escaneo
 document.getElementById('scanForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -114,13 +533,15 @@ document.getElementById('scanForm').addEventListener('submit', function(e) {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
         const resultContainer = document.getElementById('resultContainer');
         const tableBody = document.getElementById('resultTableBody');
         
-        // Limpiar tabla anterior
         tableBody.innerHTML = '';
         
-        // Llenar tabla con nuevos datos
         data.records.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -134,15 +555,66 @@ document.getElementById('scanForm').addEventListener('submit', function(e) {
         });
         
         resultContainer.style.display = 'block';
+        
+        refreshBucketImages();
+        removeImage();
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al procesar la imagen');
+        alert(`Error: ${error.message}`);
     })
     .finally(() => {
         submitButton.disabled = false;
-        submitButton.innerHTML = '<i class="ti ti-scan"></i><span class="ms-1">Escanear</span>';
+        submitButton.innerHTML = '<i class="ti ti-scan me-2"></i><span>Escanear documento</span>';
     });
 });
+
+// Soporte para drag and drop
+const dropZone = document.querySelector('.upload-area');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight(e) {
+    dropZone.classList.add('border-primary');
+}
+
+function unhighlight(e) {
+    dropZone.classList.remove('border-primary');
+}
+
+dropZone.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        const fileInput = document.getElementById('document');
+        // Crear un nuevo objeto DataTransfer
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        fileInput.files = dataTransfer.files;
+        previewImage(fileInput);
+    }
+}
+
+// Actualización automática
+setInterval(refreshBucketImages, 30000);
 </script>
+{% endblock %}
 {% endblock content %}

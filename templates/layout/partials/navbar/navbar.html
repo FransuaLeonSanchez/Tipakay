@@ -193,7 +193,7 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
-                <a class="dropdown-item" href="{% url 'pages-account-settings-account' %}">
+                <a class="dropdown-item"  style="pointer-events: none;" href="{% url 'pages-account-settings-account' %}">
                   <div class="d-flex">
                     <div class="flex-shrink-0 me-3">
                       {% if request.user|has_group:"admin" %}
